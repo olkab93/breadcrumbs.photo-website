@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>zamów zina — breadcrumbs.photo</title>
+
+    <meta name="description" content="Zamów własny zine ze swoich zdjęć. breadcrumbs.photo — Small things, printed.">
+
+    <link rel="icon" type="image/png" href="favicon.PNG?v=3">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+    <header>
+
+        <a href="index.html" class="logo">
+            <img class="logo-wordmark" src="breadcrumbs-logo.svg" alt="breadcrumbs.photo">
+            <img class="logo-mark" src="header-logo.png" alt="">
+        </a>
+
+        <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-navigation"
+            aria-label="Otwórz menu">
+            <span class="menu-icon" aria-hidden="true"></span>
+        </button>
+
+        <nav id="main-navigation" class="main-navigation">
+            <a href="index.html">← wróć do strony głównej</a>
+        </nav>
+    </header>
+
+
+    <main>
+        <!-- ==========================
+     HERO
+========================== -->
+        <section class="hero">
+
+            <div class="hero-top">
+
+                <div class="eyebrow">
+                    twoje zdjęcia, mały album.
+                </div>
+
+                <h1>
+                    Zamów <br>zina.
+                </h1>
+            </div>
+
+
+            <div class="hero-bottom">
+                <div class="hero-description">
+
+                    Wybierz formaty swoich zinów, podaj dane do wysyłki
+                    i gotowe. Po złożeniu zamówienia dostaniesz od nas
+                    wiadomość z informacją, gdzie przesłać zdjęcia.
+                </div>
+
+                <a href="#ziny" class="scroll-note">
+                    wybierz swoje ziny <span aria-hidden="true">↓</span>
+                </a>
+
+            </div>
+        </section>
+
+
+        <section id="ziny">
+
+            <div class="section-header">
+                <div class="section-title">01 | Ziny</div>
+            </div>
+
+            <div style="max-width: 540px; margin-bottom: 50px;">
+                <p>
+                    W ramach jednego zamówienia możesz wybrać do 5 zinów.
+                </p>
+            </div>
+
+            <div id="zines-list">
+                <!-- Zines will be generated here by JavaScript -->
+            </div>
+
+            <button type="button" class="add-zine-button" id="add-zine">
+                + DODAJ ZINA
+            </button>
+        </section>
+
+        <!-- Zine template (hidden, cloned by JavaScript) -->
+        <template id="zine-template">
+            <div class="zine-form-item">
+
+                <div class="zine-form-header">
+                    <span class="zine-number">ZINE <span class="zine-index">1</span></span>
+                    <button type="button" class="remove-zine" aria-label="Usuń ten zine">Usuń</button>
+                </div>
+
+                <div class="zine-fields">
+
+                    <!-- VERSION SELECTION -->
+                    <fieldset class="form-field" style="grid-column: 1 / -1;">
+                        <legend
+                            style="font-family: inherit; font-size: 12px; text-transform: uppercase; margin-bottom: 12px; display: block;">
+                            Format zina</legend>
+                        <div style="display: flex; gap: 15px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="zine-version" value="16" required>
+                                <span>ZINE 16</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="zine-version" value="32">
+                                <span>ZINE 32</span>
+                            </label>
+                        </div>
+                    </fieldset>
+
+                    <!-- TITLE -->
+                    <label class="form-field" style="grid-column: 1 / -1;">
+                        <span>Tytuł zina</span>
+                        <input type="text" name="zine-title"
+                            placeholder="Jeśli zostawisz puste, zine nie będzie miał tekstu na okładce">
+                    </label>
+
+                    <!-- SUBTITLE -->
+                    <label class="form-field" style="grid-column: 1 / -1;">
+                        <span>Podtytuł (opcjonalnie)</span>
+                        <input type="text" name="zine-subtitle" placeholder="Np. Czerwiec 2026">
+                    </label>
+
+                    <!-- COVER TYPE -->
+                    <fieldset class="form-field" style="grid-column: 1 / -1;">
+                        <legend
+                            style="font-family: inherit; font-size: 12px; text-transform: uppercase; margin-bottom: 12px; display: block;">
+                            Typ okładki</legend>
+                        <div style="display: flex; gap: 15px; margin-bottom: 12px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="zine-cover" value="regular" required>
+                                <span>Zwykła</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="zine-cover" value="transparent">
+                                <span>Transparentna</span>
+                            </label>
+                        </div>
+                        <small style="display: block; opacity: 0.65; font-size: 12px; line-height: 1.4;">
+                            Na okładce transparentnej będzie widoczne pierwsze zdjęcie z Twojego zina. Zwykła okładka ma
+                            drukowaną grafikę.
+                        </small>
+                    </fieldset>
+
+                </div>
+
+            </div>
+        </template>
+
+
+
+
+
+        <!-- ==========================
+                     DANE
+                ========================== -->
+
+        <form id="order-form">
+
+            <section id="contact-info" class="form-section">
+
+                <div class="section-header">
+                    <div class="section-title">02 | Dane kontaktowe</div>
+                </div>
+
+                <div style="max-width: 540px; margin-bottom: 50px;">
+                    <p>
+                        Potrzebujemy ich, żeby potwierdzić zamówienie
+                        i skontaktować się z Tobą w sprawie realizacji.<br>
+                        Użyjemy ich także do wysyłki Twojego zamówienia.
+                    </p>
+                </div>
+
+
+                <div class="form-grid">
+
+                    <label class="form-field">
+                        <span>Imię</span>
+                        <input type="text" name="name" autocomplete="given-name" required>
+                    </label>
+
+                    <label class="form-field">
+                        <span>E-mail</span>
+                        <input type="email" name="email" autocomplete="email" required>
+                    </label>
+
+                    <label class="form-field">
+                        <span>Numer telefonu</span>
+                        <input type="tel" name="phone" autocomplete="tel" required>
+                    </label>
+
+                </div>
+
+            </section>
+
+
+
+            <!-- ==========================
+                     WYSYŁKA
+                ========================== -->
+
+            <section class="form-section">
+
+                <div class="section-header">
+                    <div class="section-title">03 | Wysyłka</div>
+                </div>
+
+                <div style="max-width: 540px; margin-bottom: 50px;">
+                    <p>
+                        Wybierz sposób, w jaki chcesz otrzymać zina.
+                    </p>
+                </div>
+
+
+                <div class="shipping-options">
+
+                    <label class="shipping-option">
+
+                        <input type="radio" name="shipping" value="locker" required>
+
+                        <span>
+                            <strong>Paczkomat</strong>
+                            <small>odbiór w wybranym Paczkomacie</small>
+                        </span>
+
+                    </label>
+
+
+                    <label class="shipping-option">
+
+                        <input type="radio" name="shipping" value="address">
+
+                        <span>
+                            <strong>Na adres</strong>
+                            <small>dostawa kurierem</small>
+                        </span>
+
+                    </label>
+
+                </div>
+
+
+                <div id="locker-fields" class="conditional-fields is-hidden">
+
+                    <label class="form-field">
+
+                        <span>Numer Paczkomatu</span>
+
+                        <input type="text" name="locker" placeholder="np. KRA01M" autocomplete="off">
+
+                    </label>
+
+                </div>
+
+
+                <div id="address-fields" class="conditional-fields is-hidden">
+
+                    <div class="form-grid">
+
+                        <label class="form-field form-field-wide">
+                            <span>Imię i nazwisko</span>
+
+                            <input type="text" name="address-name" autocomplete="name">
+                        </label>
+
+                        <label class="form-field form-field-wide">
+                            <span>Ulica i numer</span>
+
+                            <input type="text" name="street" autocomplete="street-address">
+                        </label>
+
+
+                        <label class="form-field">
+                            <span>Kod pocztowy</span>
+
+                            <input type="text" name="postal-code" placeholder="00-000" autocomplete="postal-code">
+                        </label>
+
+
+                        <label class="form-field">
+                            <span>Miasto</span>
+
+                            <input type="text" name="city" autocomplete="address-level2">
+                        </label>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <section id="payment">
+
+                <div class="section-header">
+                    <div class="section-title">04 | Płatność</div>
+                </div>
+
+                <div style="max-width: 540px; margin-bottom: 50px;">
+                    <p>
+                        Po złożeniu zamówienia dostaniesz od nas maila z danymi potrzebnymi do dokonania
+                        płatności.<br><br>
+                        Możesz zapłacić BLIK-iem na telefon, tradycyjnym przelewem lub używając Revolut.
+                    </p>
+                </div>
+            </section>
+
+
+
+            <!-- ==========================
+                     PODSUMOWANIE
+                ========================== -->
+
+            <section class="order-summary">
+
+                <div class="section-header">
+                    <div class="section-title">Podsumowanie</div>
+                </div>
+
+
+                <div class="summary-lines" id="summary-lines"></div>
+
+
+                <div class="summary-message" id="summary-message">
+                    Dodaj zine, aby zobaczyć podsumowanie.
+                </div>
+
+
+                <div class="summary-total">
+
+                    <span>Do zapłaty</span>
+
+                    <strong id="summary-total">
+                        0,00 zł
+                    </strong>
+
+                </div>
+
+
+                <button type="submit" class="button order-submit">
+                    Zamawiam →
+                </button>
+
+
+                <p class="order-note">
+                    Po złożeniu zamówienia wyślemy Ci wiadomość
+                    z potwierdzeniem oraz linkiem do folderu,
+                    do którego prześlesz swoje zdjęcia.
+                </p>
+
+            </section>
+
+        </form>
+
+        <!-- ==========================
+                 POTWIERDZENIE — MOCKUP
+            ========================== -->
+
+        <section id="order-success" class="order-success is-hidden">
+            <h1>
+                Dzięki!
+            </h1>
+            <br>
+            <!-- <br><br> -->
+            <p>
+                Twoje zamówienie zostało przyjęte.
+                Wkrótce dostaniesz wiadomość z dalszymi instrukcjami.
+            </p>
+
+
+            <div class="success-order">
+                Numer zamówienia: <strong>ORD-2026-02</strong>
+            </div>
+
+            <a href="index.html" class="button">
+                Wróć na stronę →
+            </a>
+
+        </section>
+
+    </main>
+
+
+
+    <footer>
+
+        <div>
+            © <span id="current-year">2026</span> breadcrumbs.photo
+        </div>
+
+        <div>
+            <a href="index.html">
+                <img class="logo-mark" src="header-logo.png" alt="breadcrumbs.photo logo">
+            </a>
+        </div>
+
+        <div>
+            <a href="https://instagram.com/breadcrumbs.photo" target="_blank" rel="noopener noreferrer">
+                @breadcrumbs.photo
+            </a>
+        </div>
+
+    </footer>
+
+
+    <script src="order.js"></script>
+
+</body>
+
+</html>
