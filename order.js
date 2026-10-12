@@ -789,7 +789,7 @@ async function submitOrderToBackend() {
                 "Nie znaleźliśmy żądania w rejestrze. " +
                 "Kliknij przycisk ponownie, aby ponowić wysyłkę.";
 
-            button.disabled = false;
+            button.disabled = !form.querySelector("#terms-accepted").checked;
             button.textContent = originalText;
             return;
         }
@@ -810,7 +810,7 @@ async function submitOrderToBackend() {
 
         status.setAttribute("role", "alert");
 
-        button.disabled = false;
+        button.disabled = !form.querySelector("#terms-accepted").checked;
         button.textContent = originalText;
     }
 }
@@ -884,8 +884,27 @@ function waitForOrderResult(requestId, timeoutMs) {
 
 
 if (form) {
+    const termsCheckbox = form.querySelector("#terms-accepted");
+    const submitButton = form.querySelector(".order-submit");
+
+    if (termsCheckbox && submitButton) {
+        submitButton.disabled = !termsCheckbox.checked;
+        termsCheckbox.addEventListener("change", () => {
+            submitButton.disabled = !termsCheckbox.checked;
+        });
+    }
+
+    form.querySelectorAll("[data-link-placeholder]").forEach((link) => {
+        link.addEventListener("click", (event) => event.preventDefault());
+    });
+
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
+
+        if (!termsCheckbox?.checked) {
+            termsCheckbox?.focus();
+            return;
+        }
 
         // Nie uruchamiaj drugiego wysłania równolegle.
         if (orderSubmissionInProgress) {

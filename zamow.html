@@ -75,6 +75,7 @@
 
             <div style="max-width: 540px; margin-bottom: 50px;">
                 <p>
+                    Każdy zin przygotowujemy indywidualnie na podstawie przesłanych przez Ciebie zdjęć<br><br>
                     W ramach jednego zamówienia możesz wybrać do 5 zinów.
                 </p>
             </div>
@@ -344,8 +345,25 @@
                 </div>
 
 
-                <button type="submit" class="button order-submit">
-                    Zamawiam →
+                <div class="order-legal">
+                    <label class="terms-consent" for="terms-accepted">
+                        <input type="checkbox" id="terms-accepted" name="terms-accepted" required
+                            aria-describedby="terms-consent-text">
+                        <span id="terms-consent-text">
+                            Akceptuję <a href="#" data-link-placeholder>Regulamin sklepu</a> i zobowiązuję się do zapłaty za zamówienie.
+                            <span class="required-label">zgoda wymagana</span>
+                        </span>
+                    </label>
+
+                    <p class="privacy-information">
+                        Administratorem Twoich danych osobowych jest sprzedawca breadcrumbs.photo.
+                        Twoje dane wykorzystujemy do obsługi zamówienia i realizacji umowy.
+                        Szczegóły znajdziesz w <a href="#" data-link-placeholder>Polityce prywatności</a>.
+                    </p>
+                </div>
+
+                <button type="submit" class="button order-submit" disabled>
+                    Zamawiam i płacę →
                 </button>
 
 

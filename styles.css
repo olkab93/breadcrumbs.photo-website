@@ -911,7 +911,7 @@ fieldset {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    padding: 25px 0 35px;
+    padding: 35px 0 45px;
     border-top: 1px solid var(--line);
     font-size: 20px;
 }
@@ -931,8 +931,54 @@ fieldset {
     cursor: pointer;
 }
 
-.order-submit:hover {
+.order-submit:hover:not(:disabled) {
     background: var(--muted);
+}
+
+.order-submit:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.order-legal {
+    display: grid;
+    gap: 14px;
+    margin: 0;
+    max-width: 600px;
+    font-size: 13px;
+}
+
+.terms-consent {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.terms-consent input {
+    flex: 0 0 auto;
+    margin: 0;
+    accent-color: var(--ink);
+}
+
+.order-legal a {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.required-label {
+    display: inline-block;
+    margin-left: 6px;
+    color: #a53b24;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.privacy-information {
+    margin: 0;
+    font-size: 12px;
+    opacity: 0.7;
 }
 
 .order-note {
