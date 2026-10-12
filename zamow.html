@@ -246,6 +246,17 @@
 
                     </label>
 
+                    <label class="shipping-option shipping-option-disabled">
+
+                        <input type="radio" name="shipping" value="pickup" disabled>
+
+                        <span>
+                            <strong>Odbiór osobisty</strong>
+                            <small>możliwy z wybranymi kodami promocyjnymi</small>
+                        </span>
+
+                    </label>
+
                 </div>
 
 
@@ -333,6 +344,17 @@
                     Dodaj zine, aby zobaczyć podsumowanie.
                 </div>
 
+                <div class="promo-code-box">
+                    <label for="promo-code">Kod promocyjny</label>
+                    <div class="promo-code-controls">
+                        <input id="promo-code" name="promo-code" type="text" autocomplete="off"
+                            placeholder="Wpisz kod">
+                        <button type="button" class="promo-apply-button" id="apply-promo-code">
+                            Zastosuj kod
+                        </button>
+                    </div>
+                    <p class="promo-code-status" id="promo-code-status" role="status" aria-live="polite"></p>
+                </div>
 
                 <div class="summary-total">
 

@@ -58,6 +58,8 @@ const successSection = document.querySelector("#order-success");
 let activeOrderRequestId = sessionStorage.getItem("breadcrumbsActiveOrderRequestId");
 let activeOrderPostSent = sessionStorage.getItem("breadcrumbsActiveOrderPostSent") === "true";
 let orderSubmissionInProgress = false;
+let appliedPromo = null;
+let promoValidationRequest = 0;
 const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbyuQKOk4hiUl0BTZ5-FfhAE7YLttMkfTQnhzODmvROTAynmOknFYc-fYHudcHuwPvI8/exec";
 
 let zineCount = 0;
@@ -219,6 +221,7 @@ if (addZineButton) {
 const shippingRadios = document.querySelectorAll('input[name="shipping"]');
 const lockerFields = document.querySelector("#locker-fields");
 const addressFields = document.querySelector("#address-fields");
+const pickupRadio = document.querySelector('input[name="shipping"][value="pickup"]');
 
 function updateShippingFields() {
     const selectedValue = document.querySelector('input[name="shipping"]:checked')?.value;
@@ -236,23 +239,35 @@ function updateShippingFields() {
     const streetInput = document.querySelector('input[name="street"]');
     const postalInput = document.querySelector('input[name="postal-code"]');
     const cityInput = document.querySelector('input[name="city"]');
+    const addressNameInput = document.querySelector('input[name="address-name"]');
 
     if (selectedValue === "locker") {
         lockerInput && (lockerInput.required = true);
         streetInput && (streetInput.required = false);
         postalInput && (postalInput.required = false);
         cityInput && (cityInput.required = false);
+        addressNameInput && (addressNameInput.required = false);
     } else if (selectedValue === "address") {
         lockerInput && (lockerInput.required = false);
         streetInput && (streetInput.required = true);
         postalInput && (postalInput.required = true);
         cityInput && (cityInput.required = true);
+        addressNameInput && (addressNameInput.required = true);
+    } else {
+        lockerInput && (lockerInput.required = false);
+        streetInput && (streetInput.required = false);
+        postalInput && (postalInput.required = false);
+        cityInput && (cityInput.required = false);
+        addressNameInput && (addressNameInput.required = false);
     }
 }
 
 shippingRadios.forEach((radio) => {
-    radio.addEventListener("change", updateShippingFields);
-})
+    radio.addEventListener("change", () => {
+        updateShippingFields();
+        updateSummary();
+    });
+});
 
 
 // =========================
@@ -263,43 +278,28 @@ function calculateOrder() {
     const zineItems = zinesList.querySelectorAll(".zine-form-item");
     let subtotal = 0;
 
-    // Iterate through each zine and find the checked version
     zineItems.forEach((item, index) => {
         const zineNum = index + 1;
-        // Look for checked radio with the specific zine number
         const versionRadio = item.querySelector(`input[name="zine-${zineNum}-version"]:checked`);
         if (versionRadio) {
-            const version = parseInt(versionRadio.value);
+            const version = parseInt(versionRadio.value, 10);
             subtotal += PRICES[version] || 0;
         }
     });
 
     const count = zineItems.length;
+    const discountRate = appliedPromo
+        ? appliedPromo.discount_percent / 100
+        : count === 5 ? 0.10 : 0;
+    const selectedShipping = form?.querySelector('input[name="shipping"]:checked')?.value;
+    const shipping = selectedShipping === "pickup"
+        ? 0
+        : count >= 3 ? 0 : 15;
+    const discount = Math.round((subtotal * discountRate + Number.EPSILON) * 100) / 100;
+    const total = Math.round((subtotal - discount + shipping + Number.EPSILON) * 100) / 100;
 
-    // Pricing logic:
-    // 1–2 ziny: no discount, shipping 15 zł
-    // 3–4 ziny: no discount, free shipping
-    // 5 ziny: 10% discount, free shipping
-
-    let discountRate = 0;
-    if (count === 5) {
-        discountRate = 0.10;
-    }
-
-    const shipping = count >= 3 ? 0 : 15;
-    const discount = subtotal * discountRate;
-    const total = subtotal - discount + shipping;
-
-    return {
-        count,
-        subtotal,
-        discount,
-        shipping,
-        total,
-        discountRate
-    };
+    return { count, subtotal, discount, shipping, total, discountRate };
 }
-
 
 // =========================
 // FORMAT PRICE
@@ -340,18 +340,19 @@ function updateSummary() {
                 const discountLine = document.createElement("div");
                 discountLine.className = "summary-line summary-discount";
                 discountLine.innerHTML = `
-                    <span>Rabat ${Math.round(discountRate * 100)}%</span>
+                    <span>${appliedPromo ? `Kod ${appliedPromo.code} — rabat ` : "Rabat "}${Math.round(discountRate * 100)}%</span>
                     <span>−${formatPrice(discount)}</span>
                 `;
                 summaryLines.appendChild(discountLine);
             }
 
             // Add shipping
+            const isPickup = document.querySelector('input[name="shipping"]:checked')?.value === "pickup";
             const shippingLine = document.createElement("div");
             shippingLine.className = "summary-line";
             shippingLine.innerHTML = `
-                <span>Wysyłka</span>
-                <span>${shipping === 0 ? "gratis" : formatPrice(shipping)}</span>
+                <span>${isPickup ? "Odbiór osobisty" : "Wysyłka"}</span>
+                <span>${isPickup ? "bez kosztu" : shipping === 0 ? "gratis" : formatPrice(shipping)}</span>
             `;
             summaryLines.appendChild(shippingLine);
         }
@@ -368,7 +369,10 @@ function updateSummary() {
             else if (count > 4) message.push(count + " zinów");
 
             if (discount > 0) message.push(`rabat ${Math.round(discountRate * 100)}%`);
-            if (shipping === 0) message.push("wysyłka gratis");
+            if (appliedPromo) message.push(`kod ${appliedPromo.code}`);
+            if (document.querySelector('input[name="shipping"]:checked')?.value === "pickup") {
+                message.push("odbiór osobisty");
+            } else if (shipping === 0) message.push("wysyłka gratis");
             else message.push("wysyłka 15 zł");
 
             summaryMessage.textContent = message.join(" · ");
@@ -463,6 +467,10 @@ function validateOrder() {
 
     if (!selectedShipping) {
         errors.push("Wybierz sposób wysyłki");
+    } else if (selectedShipping.value === "pickup") {
+        if (!appliedPromo?.pickup_allowed) {
+            errors.push("Odbiór osobisty wymaga aktywnego kodu promocyjnego, który go udostępnia");
+        }
     } else {
         // Check conditional fields based on shipping method
         if (selectedShipping.value === "locker") {
@@ -571,6 +579,124 @@ function displayValidationErrors(data) {
 
 
 // =========================
+// PROMO CODES
+// =========================
+
+function requestPromoValidation(code) {
+    return new Promise((resolve, reject) => {
+        const callbackName = `promoCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const script = document.createElement("script");
+        const timeout = window.setTimeout(() => finish(new Error("Nie udało się sprawdzić kodu. Spróbuj ponownie.")), 15000);
+
+        function cleanup() {
+            window.clearTimeout(timeout);
+            delete window[callbackName];
+            script.remove();
+        }
+
+        function finish(error, result) {
+            cleanup();
+            if (error) reject(error);
+            else resolve(result);
+        }
+
+        window[callbackName] = (result) => finish(null, result);
+        script.onerror = () => finish(new Error("Nie udało się połączyć z systemem kodów promocyjnych."));
+        script.src = `${ORDER_ENDPOINT}?action=validate_promo&code=${encodeURIComponent(code)}&callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
+        document.head.appendChild(script);
+    });
+}
+
+function setPromoStatus(message, state = "") {
+    const status = document.querySelector("#promo-code-status");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("is-error", state === "error");
+    status.classList.toggle("is-success", state === "success");
+}
+
+function clearAppliedPromo() {
+    appliedPromo = null;
+    if (pickupRadio) {
+        pickupRadio.disabled = true;
+        pickupRadio.closest(".shipping-option")?.classList.add("shipping-option-disabled");
+        if (pickupRadio.checked) {
+            pickupRadio.checked = false;
+            const lockerRadio = document.querySelector('input[name="shipping"][value="locker"]');
+            if (lockerRadio) lockerRadio.checked = true;
+        }
+    }
+    updateShippingFields();
+    updateSummary();
+}
+
+const promoInput = document.querySelector("#promo-code");
+const promoApplyButton = document.querySelector("#apply-promo-code");
+
+if (promoInput && promoApplyButton) {
+    promoInput.addEventListener("input", () => {
+        promoValidationRequest++;
+        promoApplyButton.disabled = false;
+        promoApplyButton.textContent = "Zastosuj kod";
+        if (appliedPromo) clearAppliedPromo();
+        setPromoStatus("");
+    });
+
+    promoApplyButton.addEventListener("click", async () => {
+        const code = promoInput.value.trim().toUpperCase();
+        if (!code) {
+            setPromoStatus("Wpisz kod promocyjny.", "error");
+            promoInput.focus();
+            return;
+        }
+
+        const requestNumber = ++promoValidationRequest;
+        promoApplyButton.disabled = true;
+        promoApplyButton.textContent = "Sprawdzanie…";
+        setPromoStatus("");
+
+        try {
+            const result = await requestPromoValidation(code);
+            if (requestNumber !== promoValidationRequest) return;
+            if (!result?.valid) {
+                setPromoStatus(result?.error || "Ten kod jest nieaktywny lub nieprawidłowy.", "error");
+                return;
+            }
+
+            appliedPromo = {
+                code: result.code,
+                discount_percent: Number(result.discount_percent),
+                pickup_allowed: result.pickup_allowed === true
+            };
+            if (pickupRadio) {
+                pickupRadio.disabled = !appliedPromo.pickup_allowed;
+                pickupRadio.closest(".shipping-option")?.classList.toggle(
+                    "shipping-option-disabled",
+                    !appliedPromo.pickup_allowed
+                );
+            }
+            setPromoStatus(
+                appliedPromo.pickup_allowed
+                    ? `Kod ${appliedPromo.code} aktywny — rabat ${appliedPromo.discount_percent}%. Odbiór osobisty jest dostępny.`
+                    : `Kod ${appliedPromo.code} aktywny — rabat ${appliedPromo.discount_percent}%.`,
+                "success"
+            );
+            updateSummary();
+        } catch (error) {
+            if (requestNumber === promoValidationRequest) {
+                setPromoStatus(error.message, "error");
+            }
+        } finally {
+            if (requestNumber === promoValidationRequest) {
+                promoApplyButton.disabled = false;
+                promoApplyButton.textContent = "Zastosuj kod";
+            }
+        }
+    });
+}
+
+
+// =========================
 // FORM SUBMIT
 // =========================
 
@@ -590,7 +716,9 @@ async function submitOrderToBackend() {
         phone: form.querySelector('input[name="phone"]').value.trim(),
 
         shipping_method:
-            selectedShipping.value === "locker" ? "paczkomat" : "na adres",
+            selectedShipping.value === "locker" ? "paczkomat" :
+            selectedShipping.value === "pickup" ? "odbiór osobisty" : "na adres",
+        promo_code: appliedPromo?.code || "",
 
         paczkomat_code:
             selectedShipping.value === "locker"
