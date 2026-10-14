@@ -30,3 +30,44 @@ if (menuToggle && mainNavigation) {
         }
     });
 }
+
+const productPanels = document.querySelectorAll("[data-product-panel]");
+const productTitles = document.querySelectorAll("[data-product-title]");
+
+if (productPanels.length && productTitles.length) {
+    const productPanelsContainer = document.querySelector(".product-panels");
+    let titleUpdateScheduled = false;
+
+    const updateProductTitles = () => {
+        titleUpdateScheduled = false;
+        const viewportCenter = window.innerHeight / 2;
+        let activeProduct = null;
+
+        productPanels.forEach((product) => {
+            const bounds = product.getBoundingClientRect();
+            if (bounds.top <= viewportCenter && bounds.bottom >= viewportCenter) {
+                activeProduct = product.dataset.productPanel;
+            }
+        });
+
+        const isInProductArea = productPanelsContainer
+            && productPanelsContainer.getBoundingClientRect().bottom > 0
+            && productPanelsContainer.getBoundingClientRect().top < window.innerHeight;
+
+        productTitles.forEach((title) => {
+            const isActive = isInProductArea && title.dataset.productTitle === activeProduct;
+            title.classList.toggle("is-visible", isActive);
+        });
+
+    };
+
+    const scheduleTitleUpdate = () => {
+        if (titleUpdateScheduled) return;
+        titleUpdateScheduled = true;
+        window.requestAnimationFrame(updateProductTitles);
+    };
+
+    window.addEventListener("scroll", scheduleTitleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleTitleUpdate);
+    updateProductTitles();
+}
