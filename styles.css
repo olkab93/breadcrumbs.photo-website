@@ -1258,3 +1258,38 @@ fieldset {
     }
 
 }
+
+/* Price aligns with the cover choices in each zine form. */
+.zine-cover-choice-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.zine-cover-options {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.zine-price-line {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-left: auto;
+}
+
+.zine-price-line strong {
+    font-family: inherit;
+    font-size: 24px;
+    line-height: 1;
+}
+
+@media (max-width: 600px) {
+    .zine-price-line {
+        margin-left: 0;
+    }
+}
