@@ -11,6 +11,9 @@ if (menuToggle && mainNavigation) {
         menuToggle.setAttribute("aria-expanded", "false");
         menuToggle.setAttribute("aria-label", "Otwórz menu");
         mainNavigation.classList.remove("is-open");
+        mainNavigation.querySelectorAll(".nav-dropdown[open]").forEach(dropdown => {
+            dropdown.open = false;
+        });
     };
 
     menuToggle.addEventListener("click", () => {
@@ -36,11 +39,11 @@ if (menuToggle && mainNavigation) {
 // =========================
 
 const productDataElements = document.querySelectorAll(
-    "[data-product-names], [data-product-pages], [data-product-max-photos], [data-product-prices]"
+    "[data-product-names], [data-product-formats], [data-product-pages], [data-product-max-photos], [data-product-prices]"
 );
 
 if (productDataElements.length) {
-    const PRODUCT_CATALOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbyuQKOk4hiUl0BTZ5-FfhAE7YLttMkfTQnhzODmvROTAynmOknFYc-fYHudcHuwPvI8/exec";
+    const PRODUCT_CATALOG_ENDPOINT = "https://script.google.com/macros/s/AKfycbywufOMqv1wNAPG7WF1spzrVxgFlldTwlnNtJ_TZ8E87dYpJ9ueVzkNDBGPHu_N2CukHA/exec";
     const callbackName = `homeProductsCallback_${Date.now()}_${Math.random().toString(36).slice(2)}`;
     const catalogScript = document.createElement("script");
 
@@ -49,9 +52,19 @@ if (productDataElements.length) {
         catalogScript.remove();
     };
 
-    window[callbackName] = (response) => {
-        cleanupCatalogRequest();
+    const renderCatalogResponse = (response, saveToCache = false) => {
         if (!response?.success) return;
+
+        if (saveToCache) {
+            try {
+                localStorage.setItem("breadcrumbsProductCatalogCache", JSON.stringify({
+                    savedAt: Date.now(),
+                    response
+                }));
+            } catch (error) {
+                // Storage may be disabled; the live catalog still renders normally.
+            }
+        }
 
         if (response.settings && typeof response.settings === "object") {
             document.querySelectorAll("[data-store-setting]").forEach(element => {
@@ -78,7 +91,7 @@ if (productDataElements.length) {
         };
 
         productDataElements.forEach(element => {
-            const ids = (element.dataset.productNames || element.dataset.productPages ||
+            const ids = (element.dataset.productNames || element.dataset.productFormats || element.dataset.productPages ||
                 element.dataset.productMaxPhotos || element.dataset.productPrices || "")
                 .split(",").map(id => id.trim()).filter(Boolean);
             const products = ids.map(id => productsById.get(id)).filter(Boolean);
@@ -86,14 +99,38 @@ if (productDataElements.length) {
 
             if (element.hasAttribute("data-product-names")) {
                 element.textContent = productBaseName(products[0].name);
+            } else if (element.hasAttribute("data-product-formats")) {
+                element.textContent = [...new Set(products.map(product => product.format).filter(Boolean))].join(" / ");
             } else if (element.hasAttribute("data-product-pages")) {
-                element.textContent = products.map(product => product.pages).join(" / ");
+                const variantTargets = element.querySelectorAll("[data-product-variant-id]");
+                if (variantTargets.length) {
+                    variantTargets.forEach(target => {
+                        const product = productsById.get(target.dataset.productVariantId);
+                        if (product) target.textContent = product.pages;
+                    });
+                } else {
+                    element.textContent = products.map(product => product.pages).join(" / ");
+                }
             } else if (element.hasAttribute("data-product-max-photos")) {
                 element.textContent = products.map(product => Number(product.pages) * 2).join(" / ");
             } else if (element.hasAttribute("data-product-prices")) {
                 element.textContent = products.map(product => formatPrice(product.price_pln)).join(" / ");
             }
         });
+    };
+
+    // Reuse the catalog already loaded by the order form while the live request refreshes it.
+    try {
+        const cached = JSON.parse(localStorage.getItem("breadcrumbsProductCatalogCache") || "null");
+        const cacheIsFresh = cached?.response && Date.now() - cached.savedAt <= 24 * 60 * 60 * 1000;
+        if (cacheIsFresh) renderCatalogResponse(cached.response);
+    } catch (error) {
+        // Continue with the live request when local storage is unavailable or invalid.
+    }
+
+    window[callbackName] = (response) => {
+        cleanupCatalogRequest();
+        renderCatalogResponse(response, true);
     };
 
     catalogScript.onerror = cleanupCatalogRequest;

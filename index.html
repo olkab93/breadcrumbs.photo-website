@@ -36,10 +36,17 @@
         </button>
 
         <nav id="main-navigation" class="main-navigation">
-            <a href="#produkty">produkty</a>
+            <details class="nav-dropdown">
+                <summary>produkty</summary>
+                <div class="nav-dropdown-menu">
+                    <a href="#zine-mini">ZINE mini</a>
+                    <a href="#zine-core">ZINE</a>
+                    <a href="#album">ALBUM</a>
+                </div>
+            </details>
             <a href="#jak-to-dziala">jak to działa</a>
             <a href="#o-projekcie">o projekcie</a>
-            <a href="zamow.html" target="_blank">zamów zina</a>
+            <a href="zamow.html">zamów swój breadcrumbs</a>
         </nav>
 
     </header>
@@ -98,7 +105,7 @@
             <div class="section-header">
 
                 <div class="section-title">
-                    Ziny
+                    breadcrumbs
                 </div>
 
             </div>
@@ -106,16 +113,71 @@
 
             <div class="product-panels">
 
-                <article class="product-panel" id="zine-core">
+                <article class="product-panel" id="zine-mini">
                     <div class="products">
                         <div class="product-photo">
                             <div class="image-placeholder product-image">
-                                <!--
-                            Tutaj możesz wstawić zdjęcie produktu:
+                                <img src="/products/zine_mini/zine_mini_2.jpg" alt="ZINE mini w formacie A6">
 
-                            <img src="images/zine-a5.jpg" alt="ZINE w formacie A5">
-                        -->
                             </div>
+                        </div>
+
+                        <div class="product-stack">
+                            <div class="product">
+                                <h3 class="product-name">ZINE mini</h3>
+                                <div class="details">
+                                    <div class="detail-row">
+                                        <span>Format</span>
+                                        <span>A6</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Papier</span>
+                                        <span>fotograficzny matowy, 200 g</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Strony</span>
+                                        <span>8 / 16</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Maksymalna ilość zdjęć</span>
+                                        <span>8 / 16</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Cena</span>
+                                        <span data-product-prices="zine_mini_8,zine_mini_16">- PLN / - PLN</span>
+                                    </div>
+                                </div>
+
+                                <p class="product-description">
+                                    Mały, prosty album w formie magazynu na ulubione zdjęcia. Dobry na weekendowy
+                                    wyjazd, kilka wspomnień
+                                    albo jeden mały moment.
+                                </p>
+                                <p class="shipping-note product-shipping-note">
+                                    <br>
+                                    Do ceny breadcrumbsa doliczamy <strong><span
+                                            data-store-setting="shipping_standard">15</span> zł za wysyłkę</strong>.
+                                    <br><br>
+                                    Zamawiasz kilka? Przy <strong><span
+                                            data-store-setting="discount_from_count">5</span> breadcrumbsach płacisz
+                                        <span data-store-setting="discount_percent">10</span>% mniej</strong>.
+                                    <br>
+                                    Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span>
+                                    breadcrumbsów
+                                    <strong>wysyłamy za darmo</strong>.
+                                </p>
+                            </div>
+                            <a href="zamow.html" class="button product-order-button">
+                                Zamów →
+                            </a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="product-panel" id="zine-core">
+                    <div class="products">
+                        <div class="product-image">
+                            <img src="/products/zine/zine_1.jpg" alt="ZINE w formacie A5">
                         </div>
 
                         <div class="product-stack">
@@ -127,8 +189,12 @@
                                         <span>A5</span>
                                     </div>
                                     <div class="detail-row">
+                                        <span>Papier</span>
+                                        <span>fotograficzny matowy, 200 g</span>
+                                    </div>
+                                    <div class="detail-row">
                                         <span>Strony</span>
-                                        <span data-product-pages="zine_16,zine_32">16 / 32</span>
+                                        <span>16 / 32</span>
                                     </div>
                                     <div class="detail-row">
                                         <span>Maksymalna ilość zdjęć</span>
@@ -136,7 +202,7 @@
                                     </div>
                                     <div class="detail-row">
                                         <span>Cena</span>
-                                        <span data-product-prices="zine_16,zine_32">69 PLN / 89 PLN</span>
+                                        <span data-product-prices="zine_16,zine_32">- PLN / - PLN</span>
                                     </div>
                                 </div>
 
@@ -146,69 +212,78 @@
                                 </p>
                                 <p class="shipping-note product-shipping-note">
                                     <br>
-                                    Do ceny zina doliczamy <strong><span data-store-setting="shipping_standard">15</span> zł za wysyłkę</strong>.
+                                    Do ceny breadcrumbsa doliczamy <strong><span
+                                            data-store-setting="shipping_standard">15</span> zł za wysyłkę</strong>.
                                     <br><br>
-                                    Zamawiasz kilka? Przy <strong><span data-store-setting="discount_from_count">5</span> zinach płacisz <span data-store-setting="discount_percent">10</span>% mniej</strong>.
+                                    Zamawiasz kilka? Przy <strong><span
+                                            data-store-setting="discount_from_count">5</span> breadcrumbsach płacisz
+                                        <span data-store-setting="discount_percent">10</span>% mniej</strong>.
                                     <br>
-                                    Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span> zinów <strong>wysyłamy za darmo</strong>.
+                                    Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span>
+                                    breadcrumbsów
+                                    <strong>wysyłamy za darmo</strong>.
                                 </p>
                             </div>
                             <a href="zamow.html" target="_blank" class="button product-order-button">
-                                Zamów zina →
+                                Zamów →
                             </a>
                         </div>
                     </div>
                 </article>
 
-                <article class="product-panel" id="zine-mini">
+
+
+                <article class="product-panel" id="album">
                     <div class="products">
-                        <div class="product-photo">
-                            <div class="image-placeholder product-image">
-                                <!--
-                            Tutaj możesz wstawić zdjęcie produktu:
-
-                            <img src="images/zine-mini.jpg" alt="ZINE mini w formacie A6">
-                        -->
-                            </div>
+                        <div class="product-image">
+                            <img src="/products/album_wip.jpg" alt="ALBUM w formacie 10x7,5">
                         </div>
-
                         <div class="product-stack">
                             <div class="product">
-                                <h3 class="product-name" data-product-names="zine_mini_16,zine_mini_32">ZINE mini</h3>
+                                <h3>ALBUM</h3>
                                 <div class="details">
                                     <div class="detail-row">
                                         <span>Format</span>
-                                        <span>A6</span>
+                                        <span>10x7,5</span>
+                                    </div>
+                                    <div class="detail-row">
+                                        <span>Papier</span>
+                                        <span>fotograficzny błyszczący, 180 g</span>
                                     </div>
                                     <div class="detail-row">
                                         <span>Strony</span>
-                                        <span data-product-pages="zine_mini_16,zine_mini_32">16 / 32</span>
+                                        <span>16 / 32 </span>
                                     </div>
                                     <div class="detail-row">
-                                        <span>Maksymalna ilość zdjęć</span>
-                                        <span>16 / 32</span>
+                                        <span>Ilość zdjęć</span>
+                                        <span data-product-max-photos="album_8,album_16">8 / 16</span>
                                     </div>
                                     <div class="detail-row">
                                         <span>Cena</span>
-                                        <span data-product-prices="zine_mini_16,zine_mini_32">39 PLN / 59 PLN</span>
+                                        <span data-product-prices="album_8,album_16">— / —</span>
                                     </div>
                                 </div>
 
                                 <p class="product-description">
-                                    Mały, prosty album na ulubione zdjęcia. Dobry na weekendowy wyjazd, kilka wspomnień
-                                    albo jeden mały moment.
+                                    Niewielki album na ulubione zdjęcia. Wybierz 8 lub 16 zdjęć i ułóż z nich własną
+                                    opowieść.
                                 </p>
                                 <p class="shipping-note product-shipping-note">
                                     <br>
-                                    Do ceny zina doliczamy <strong><span data-store-setting="shipping_standard">15</span> zł za wysyłkę</strong>.
+                                    Do ceny breadcrumbsa doliczamy <strong><span
+                                            data-store-setting="shipping_standard">15</span> zł za wysyłkę</strong>.
                                     <br><br>
-                                    Zamawiasz kilka? Przy <strong><span data-store-setting="discount_from_count">5</span> zinach płacisz <span data-store-setting="discount_percent">10</span>% mniej</strong>.
+                                    Zamawiasz kilka? Przy <strong><span
+                                            data-store-setting="discount_from_count">5</span> breadcrumbsach płacisz
+                                        <span data-store-setting="discount_percent">10</span>% mniej</strong>.
                                     <br>
-                                    Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span> zinów <strong>wysyłamy za darmo</strong>.
+                                    Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span>
+                                    breadcrumbsów
+                                    <strong>wysyłamy za darmo</strong>.
                                 </p>
                             </div>
-                            <a href="zamow.html" target="_blank" class="button product-order-button">
-                                Zamów zina →
+                            <a href="zamow.html" class="button product-order-button">
+                                Zamów →
                             </a>
                         </div>
                     </div>
@@ -254,7 +329,7 @@
                     </h3>
 
                     <p>
-                        Wybierasz wersję zina i przesyłasz
+                        Wybierasz wersję breadcrumbsa i przesyłasz
                         swoje zdjęcia. Możesz wybrać je
                         z telefonu, aparatu albo dysku.
                     </p>
@@ -291,11 +366,31 @@
                     </div>
 
                     <h3>
-                        Dostajesz zina
+                        Akceptujesz projekt
                     </h3>
 
                     <p>
-                        Gotowy album trafia do Ciebie.
+                        Zanim trafi do druku, wysyłamy Ci gotowy projekt.
+                        Możesz sprawdzić układ zdjęć i dać nam znać,
+                        jeśli chcesz coś zmienić.
+                    </p>
+
+                </div>
+
+
+
+                <div class="process-item">
+
+                    <div class="process-number">
+                        04
+                    </div>
+
+                    <h3>
+                        Dostajesz breadcrumbsa
+                    </h3>
+
+                    <p>
+                        Gotowy breadcrumbs trafia do Ciebie.
                         Mały, fizyczny zapis czegoś,
                         co wcześniej było tylko
                         w galerii telefonu.
@@ -343,7 +438,7 @@
                     </p>
 
                     <p>
-                        Robimy małe, proste ziny ze zdjęć,
+                        Robimy małe, proste ziny i albumy ze zdjęć,
                         które już masz. Bez wielkich albumów,
                         bez skomplikowanych fotoksiążek.
                     </p>
@@ -371,7 +466,7 @@
             <div class="section-header">
 
                 <div class="section-title">
-                    Tak może wyglądać Twój zine
+                    Tak może wyglądać Twój breadcrumbs
                 </div>
 
             </div>
@@ -379,14 +474,21 @@
 
             <div class="gallery">
 
-                <div class="image-placeholder gallery-image"></div>
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zines.jpg" alt="ZINE w formacie A6 i A5">
+                </div>
 
-                <div class="image-placeholder gallery-image"></div>
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine_mini/zine_mini_1.jpg" alt="ZINE mini w formacie A6">
+                </div>
 
-                <div class="image-placeholder gallery-image"></div>
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine/zine_2.jpg" alt="ZINE w formacie A5">
+                </div>
 
-                <div class="image-placeholder gallery-image"></div>
-
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine_mini/zine_mini_cover.jpg" alt="ZINE mini w formacie A6">
+                </div>
             </div>
 
         </section>
@@ -410,17 +512,22 @@
                 w coś, co naprawdę możesz zachować.
             </p>
 
-            <a href="zamow.html" target="_blank" class="button">
-                Zamów zina →
+            <a href="zamow.html" class="button">
+                Zamów →
             </a>
 
             <p class="shipping-note cta-shipping-note">
                 <br><br>
-                Do ceny zina doliczamy <strong><span data-store-setting="shipping_standard">15</span> zł za wysyłkę</strong>.
+                Do ceny breadcrumbsa doliczamy <strong><span data-store-setting="shipping_standard">15</span> zł za
+                    wysyłkę</strong>.
                 <br><br>
-                Zamawiasz kilka? Przy <strong><span data-store-setting="discount_from_count">5</span> zinach płacisz <span data-store-setting="discount_percent">10</span>% mniej</strong>.
+                Zamawiasz kilka? Przy <strong><span data-store-setting="discount_from_count">5</span> breadcrumbsach
+                    płacisz
+                    <span data-store-setting="discount_percent">10</span>% mniej</strong>.
                 <br>
-                Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span> zinów <strong>wysyłamy za darmo</strong>.
+                Przy zamówieniu od <span data-store-setting="free_shipping_from">3</span> breadcrumbsów <strong>wysyłamy
+                    za
+                    darmo</strong>.
             </p>
 
         </section>
@@ -434,27 +541,29 @@
      STOPKA
 ========================== -->
 
-    <footer>
-
-        <div>
-            © <span id="current-year">2026</span> breadcrumbs.photo
+    <footer class="site-footer">
+        <div class="footer-cookie">
+            <button class="cookie-preferences-link" type="button"
+                onclick="window.breadcrumbsCookieConsent?.show()">ustawienia cookies</button>
         </div>
 
-        <div>
-            <a href="index.html">
+        <div class="footer-center">
+            <a class="footer-logo" href="index.html">
                 <img class="logo-mark" src="header-logo.png" alt="breadcrumbs.photo logo">
             </a>
+            <div class="footer-copyright">© <span id="current-year">2026</span> breadcrumbs.photo</div>
         </div>
 
-        <div>
-            <a href="https://instagram.com/breadcrumbs.photo" target="_blank">
+        <div class="footer-instagram">
+            <a href="https://instagram.com/breadcrumbs.photo" target="_blank" rel="noopener noreferrer">
                 @breadcrumbs.photo
             </a>
         </div>
-
     </footer>
 
 
+    <script src="cookie-consent.js"></script>
+    <script src="recaptcha.js"></script>
     <script src="script.js"></script>
 </body>
 

@@ -60,7 +60,7 @@ let activeOrderPostSent = sessionStorage.getItem("breadcrumbsActiveOrderPostSent
 let orderSubmissionInProgress = false;
 let appliedPromo = null;
 let promoValidationRequest = 0;
-const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbyuQKOk4hiUl0BTZ5-FfhAE7YLttMkfTQnhzODmvROTAynmOknFYc-fYHudcHuwPvI8/exec";
+const ORDER_ENDPOINT = "https://script.google.com/macros/s/AKfycbywufOMqv1wNAPG7WF1spzrVxgFlldTwlnNtJ_TZ8E87dYpJ9ueVzkNDBGPHu_N2CukHA/exec";
 
 let zineCount = 0;
 let storeSettings = {
@@ -74,6 +74,60 @@ let storeSettings = {
 let productCatalog = [];
 let productCatalogLoaded = false;
 let productCatalogError = null;
+
+const PRODUCT_CATALOG_CACHE_KEY = "breadcrumbsProductCatalogCache";
+// Keep the last known catalog available between visits. The live request below
+// always refreshes it in the background, while the backend remains authoritative
+// when an order is submitted.
+const PRODUCT_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+function applyProductCatalogResponse(response) {
+    if (!response?.success || !Array.isArray(response.products) || !response.settings) {
+        throw new Error('Nie udało się pobrać konfiguracji breadcrumbs.');
+    }
+
+    const settingKeys = [
+        "shipping_standard", "free_shipping_from", "discount_from_count",
+        "discount_percent", "max_zines_per_order"
+    ];
+    const settings = {};
+    for (const key of settingKeys) {
+        settings[key] = Number(response.settings[key]);
+        if (!Number.isFinite(settings[key])) {
+            throw new Error(`Nieprawidłowa wartość ustawienia: ${key}`);
+        }
+    }
+    storeSettings = settings;
+
+    const products = response.products
+        .filter(product => product.active !== false)
+        .map(product => ({
+            product_id: String(product.product_id),
+            name: String(product.name),
+            format: String(product.format),
+            pages: Number(product.pages),
+            price_pln: Number(product.price_pln)
+        }))
+        .filter(product => product.product_id && product.name && product.format &&
+            Number.isInteger(product.pages) && Number.isFinite(product.price_pln));
+
+    if (products.length === 0) throw new Error('Brak aktywnych breadcrumbs.');
+    productCatalog = products;
+    return products;
+}
+
+function readCachedProductCatalog() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(PRODUCT_CATALOG_CACHE_KEY) || "null");
+        if (!cached?.response || Date.now() - cached.savedAt > PRODUCT_CATALOG_CACHE_TTL_MS) {
+            return null;
+        }
+        applyProductCatalogResponse(cached.response);
+        return cached.response;
+    } catch (error) {
+        return null;
+    }
+}
 
 function loadProductCatalog() {
     return new Promise((resolve, reject) => {
@@ -91,51 +145,27 @@ function loadProductCatalog() {
             settled = true;
             cleanup();
 
-            if (!response?.success || !Array.isArray(response.products) || !response.settings) {
-                reject(new Error('Nie udało się pobrać produktów i ustawień sklepu.'));
-                return;
-            }
-
-            const settingKeys = [
-                "shipping_standard", "free_shipping_from", "discount_from_count",
-                "discount_percent", "max_zines_per_order"
-            ];
-            const settings = {};
-            for (const key of settingKeys) {
-                settings[key] = Number(response.settings[key]);
-                if (!Number.isFinite(settings[key])) {
-                    reject(new Error(`Nieprawidłowa wartość ustawienia: ${key}`));
-                    return;
+            try {
+                applyProductCatalogResponse(response);
+                try {
+                    localStorage.setItem(PRODUCT_CATALOG_CACHE_KEY, JSON.stringify({
+                        savedAt: Date.now(),
+                        response
+                    }));
+                } catch (error) {
+                    // Storage may be disabled; the live catalog still renders normally.
                 }
+                resolve(productCatalog);
+            } catch (error) {
+                reject(error);
             }
-            storeSettings = settings;
-
-            productCatalog = response.products
-                .filter(product => product.active !== false)
-                .map(product => ({
-                    product_id: String(product.product_id),
-                    name: String(product.name),
-                    format: String(product.format),
-                    pages: Number(product.pages),
-                    price_pln: Number(product.price_pln)
-                }))
-                .filter(product => product.product_id && product.name &&
-                    ['A5', 'A6'].includes(product.format) &&
-                    Number.isInteger(product.pages) &&
-                    Number.isFinite(product.price_pln));
-
-            if (productCatalog.length === 0) {
-                reject(new Error('Brak aktywnych produktów w katalogu.'));
-                return;
-            }
-            resolve(productCatalog);
         };
 
         script.onerror = () => {
             if (settled) return;
             settled = true;
             cleanup();
-            reject(new Error('Nie udało się połączyć z katalogiem produktów.'));
+            reject(new Error('Nie udało się pobrać konfiguracji breadcrumbs.'));
         };
 
         script.src = `${ORDER_ENDPOINT}?action=products&callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
@@ -145,15 +175,23 @@ function loadProductCatalog() {
 
 
 function productFamilyForId(productId) {
+    if (productId.startsWith("album_")) return "album";
     if (productId.startsWith("zine_mini_")) return "zine_mini";
     if (productId.startsWith("zine_")) return "zine";
     return "";
 }
 
+const PRODUCT_PAGES_BY_FAMILY = {
+    zine: [16, 32],
+    zine_mini: [8, 16],
+    album: [8, 16]
+};
+
 function getSelectedCatalogProduct(item, number) {
     if (!item) return null;
     const family = item.querySelector(`input[name="zine-${number}-product-kind"]:checked`)?.value;
     const pages = Number(item.querySelector(`input[name="zine-${number}-pages"]:checked`)?.value);
+    if (!PRODUCT_PAGES_BY_FAMILY[family]?.includes(pages)) return null;
     return productCatalog.find(product =>
         productFamilyForId(product.product_id) === family && product.pages === pages
     ) || null;
@@ -165,7 +203,10 @@ function syncZineProduct(item, number) {
     const familyInputs = item.querySelectorAll(`input[name="zine-${number}-product-kind"]`);
     const pageInputs = item.querySelectorAll(`input[name="zine-${number}-pages"]`);
     familyInputs.forEach(input => {
-        input.disabled = !productCatalog.some(product => productFamilyForId(product.product_id) === input.value);
+        const allowedPages = PRODUCT_PAGES_BY_FAMILY[input.value] || [];
+        input.disabled = !productCatalog.some(product =>
+            productFamilyForId(product.product_id) === input.value && allowedPages.includes(product.pages)
+        );
     });
 
     let selectedFamily = item.querySelector(`input[name="zine-${number}-product-kind"]:checked`);
@@ -174,11 +215,16 @@ function syncZineProduct(item, number) {
         if (selectedFamily) selectedFamily.checked = true;
     }
 
+    const allowedPages = PRODUCT_PAGES_BY_FAMILY[selectedFamily?.value] || [];
     const availablePages = productCatalog
         .filter(product => productFamilyForId(product.product_id) === selectedFamily?.value)
-        .map(product => product.pages);
+        .map(product => product.pages)
+        .filter(pages => allowedPages.includes(pages));
     pageInputs.forEach(input => {
-        input.disabled = !availablePages.includes(Number(input.value));
+        const isAvailable = availablePages.includes(Number(input.value));
+        input.disabled = !isAvailable;
+        const optionLabel = input.closest("label");
+        if (optionLabel) optionLabel.hidden = !isAvailable;
     });
 
     let selectedPages = item.querySelector(`input[name="zine-${number}-pages"]:checked`);
@@ -188,6 +234,22 @@ function syncZineProduct(item, number) {
     }
 
     const product = getSelectedCatalogProduct(item, number);
+    const family = item.querySelector(`input[name="zine-${number}-product-kind"]:checked`)?.value;
+    const coverField = item.querySelector(".zine-cover-field");
+    const coverInputs = item.querySelectorAll(`input[name="zine-${number}-cover"]`);
+    const needsCoverChoice = family !== "album";
+    if (coverField) coverField.hidden = !needsCoverChoice;
+    coverInputs.forEach(input => {
+        input.required = needsCoverChoice;
+        if (!needsCoverChoice && input.value === "regular") input.checked = true;
+    });
+
+    const typeLabel = item.querySelector(".product-type-label");
+    if (typeLabel) {
+        typeLabel.textContent = family === "album" ? "ALBUM" :
+            family === "zine_mini" ? "ZINE mini" : "ZINE";
+    }
+
     item.dataset.productId = product?.product_id || "";
     const priceElement = item.querySelector("[data-zine-price]");
     if (priceElement) priceElement.textContent = product ? formatPrice(product.price_pln) : "—";
@@ -460,7 +522,6 @@ function updateSummary() {
     const { count, subtotal, discount, shipping, total, discountRate } = calculateOrder();
 
     const summaryLines = document.querySelector("#summary-lines");
-    const summaryMessage = document.querySelector("#summary-message");
     const summaryTotal = document.querySelector("#summary-total");
 
     // Clear summary lines
@@ -468,14 +529,40 @@ function updateSummary() {
         summaryLines.innerHTML = "";
 
         if (count > 0) {
-            // Add subtotal
-            const subtotalLine = document.createElement("div");
-            subtotalLine.className = "summary-line";
-            subtotalLine.innerHTML = `
-                <span>${count === 1 ? "1 zine" : count >= 2 && count <= 4 ? count + " ziny" : count + " zinów"}</span>
-                <strong>${formatPrice(subtotal)}</strong>
-            `;
-            summaryLines.appendChild(subtotalLine);
+            // Group matching products by their exact catalog name from Sheets.
+            const selectedProducts = new Map();
+            zinesList.querySelectorAll(".zine-form-item").forEach((item, index) => {
+                const product = getSelectedCatalogProduct(item, index + 1);
+                if (!product) return;
+
+                const selection = selectedProducts.get(product.name);
+                if (selection) {
+                    selection.quantity += 1;
+                    selection.subtotal += product.price_pln;
+                } else {
+                    selectedProducts.set(product.name, {
+                        quantity: 1,
+                        subtotal: product.price_pln
+                    });
+                }
+            });
+
+            selectedProducts.forEach((selection, name) => {
+
+                const productLine = document.createElement("div");
+                productLine.className = "summary-line";
+
+                const productName = document.createElement("span");
+                productName.textContent = selection.quantity > 1
+                    ? `${name} × ${selection.quantity}`
+                    : name;
+
+                const productPrice = document.createElement("strong");
+                productPrice.textContent = formatPrice(selection.subtotal);
+
+                productLine.append(productName, productPrice);
+                summaryLines.appendChild(productLine);
+            });
 
             // Add discount if applicable
             if (discount > 0) {
@@ -497,27 +584,6 @@ function updateSummary() {
                 <span>${isPickup ? "bez kosztu" : shipping === 0 ? "gratis" : formatPrice(shipping)}</span>
             `;
             summaryLines.appendChild(shippingLine);
-        }
-    }
-
-    // Update message
-    if (summaryMessage) {
-        if (count === 0) {
-            summaryMessage.textContent = "Dodaj zine, aby zobaczyć podsumowanie.";
-        } else {
-            const message = [];
-            if (count === 1) message.push("1 zine");
-            else if (count >= 2 && count <= 4) message.push(count + " ziny");
-            else if (count > 4) message.push(count + " zinów");
-
-            if (discount > 0) message.push(`rabat ${Math.round(discountRate * 100)}%`);
-            if (appliedPromo) message.push(`kod ${appliedPromo.code}`);
-            if (document.querySelector('input[name="shipping"]:checked')?.value === "pickup") {
-                message.push("odbiór osobisty");
-            } else if (shipping === 0) message.push("wysyłka gratis");
-            else message.push(`wysyłka ${formatPrice(storeSettings.shipping_standard)}`);
-
-            summaryMessage.textContent = message.join(" · ");
         }
     }
 
@@ -557,24 +623,25 @@ function validateOrder() {
     const errors = [];
     const invalidFields = []; // Track invalid inputs for visual feedback
 
-    // Check if at least one zine is added
+    // Check if at least one product is added
     const zineItems = zinesList.querySelectorAll(".zine-form-item");
     if (zineItems.length === 0) {
-        errors.push("Dodaj co najmniej jeden zine");
+        errors.push("Dodaj breadcrumbs, aby kontynuować");
     } else {
-        // Check each zine for product and cover selection
+        // Check each product and require cover selection only for zines.
         zineItems.forEach((item, index) => {
             const zineNum = index + 1;
             const product = getSelectedCatalogProduct(item, zineNum);
             const coverChecked = item.querySelector(`input[name="zine-${zineNum}-cover"]:checked`);
+            const family = item.querySelector(`input[name="zine-${zineNum}-product-kind"]:checked`)?.value;
 
             if (!productCatalogLoaded) {
                 errors.push(productCatalogError || "Lista produktów jest jeszcze ładowana.");
             } else if (!product) {
-                errors.push(`ZINE ${zineNum}: Wybierz produkt i liczbę stron`);
+                errors.push(`Breadcrumbs ${zineNum}: Wybierz wariant i liczbę stron`);
             }
-            if (!coverChecked) {
-                errors.push(`ZINE ${zineNum}: Wybierz typ okładki`);
+            if (product && family !== "album" && !coverChecked) {
+                errors.push(`Breadcrumbs ${zineNum}: Wybierz typ okładki`);
             }
         });
     }
@@ -861,7 +928,7 @@ async function submitOrderToBackend() {
 
         shipping_method:
             selectedShipping.value === "locker" ? "paczkomat" :
-            selectedShipping.value === "pickup" ? "odbiór osobisty" : "na adres",
+                selectedShipping.value === "pickup" ? "odbiór osobisty" : "na adres",
         promo_code: appliedPromo?.code || "",
 
         paczkomat_code:
@@ -957,11 +1024,6 @@ async function submitOrderToBackend() {
     const requestId = activeOrderRequestId;
     payload.client_request_id = requestId;
 
-    sessionStorage.setItem(
-        "breadcrumbsActiveOrderPayload",
-        JSON.stringify(payload)
-    );
-
     const button = form.querySelector(".order-submit");
     const originalText = button.textContent;
 
@@ -981,20 +1043,31 @@ async function submitOrderToBackend() {
 
     try {
         if (!activeOrderPostSent) {
-            await fetch(ORDER_ENDPOINT, {
+            status.textContent = "Sprawdzamy zabezpieczenie…";
+            payload.recaptcha_token = await window.executeRecaptcha("submit_order");
+            sessionStorage.setItem(
+                "breadcrumbsActiveOrderPayload",
+                JSON.stringify(payload)
+            );
+
+            // Start the POST and poll its durable status in parallel. The backend
+            // records completion before sending email, so the customer need not
+            // wait for email delivery to finish.
+            activeOrderPostSent = true;
+            sessionStorage.setItem(
+                "breadcrumbsActiveOrderPostSent",
+                "true"
+            );
+            fetch(ORDER_ENDPOINT, {
                 method: "POST",
                 mode: "no-cors",
                 headers: {
                     "Content-Type": "text/plain;charset=utf-8"
                 },
                 body: JSON.stringify(payload)
+            }).catch((postError) => {
+                console.error("Order POST failed; checking the request register:", postError);
             });
-
-            activeOrderPostSent = true;
-            sessionStorage.setItem(
-                "breadcrumbsActiveOrderPostSent",
-                "true"
-            );
         }
 
         status.textContent = "Sprawdzamy status zamówienia…";
@@ -1007,7 +1080,7 @@ async function submitOrderToBackend() {
                 "Nie udało się potwierdzić zapisu zamówienia."
             );
 
-            error.code = "ORDER_FAILED";
+            error.code = result?.code || "ORDER_FAILED";
             throw error;
         }
 
@@ -1064,6 +1137,19 @@ async function submitOrderToBackend() {
             return;
         }
 
+        if (error.code === "RECAPTCHA_REJECTED" || error.code === "RECAPTCHA_NOT_CONFIGURED") {
+            activeOrderRequestId = null;
+            activeOrderPostSent = false;
+            sessionStorage.removeItem("breadcrumbsActiveOrderRequestId");
+            sessionStorage.removeItem("breadcrumbsActiveOrderPostSent");
+            sessionStorage.removeItem("breadcrumbsActiveOrderPayload");
+            status.textContent = error.message || "Weryfikacja CAPTCHA nie powiodła się. Kliknij ponownie, aby spróbować jeszcze raz.";
+            status.setAttribute("role", "alert");
+            button.disabled = !form.querySelector("#terms-accepted").checked;
+            button.textContent = originalText;
+            return;
+        }
+
         if (error.code === "ORDER_FAILED") {
             status.textContent =
                 "Nie udało się potwierdzić zamówienia. " +
@@ -1090,6 +1176,7 @@ function waitForOrderResult(requestId, timeoutMs) {
     const startedAt = Date.now();
 
     return new Promise((resolve, reject) => {
+        let pollDelay = 500;
         function poll() {
             if (Date.now() - startedAt >= timeoutMs) {
                 reject(new Error(
@@ -1117,15 +1204,23 @@ function waitForOrderResult(requestId, timeoutMs) {
                 cleanup();
 
                 if (response?.status === "pending") {
-                    setTimeout(poll, 1500);
+                    setTimeout(poll, pollDelay);
+                    pollDelay = Math.min(Math.round(pollDelay * 1.5), 2200);
                 } else if (response?.status === "complete") {
                     resolve(response.result);
                 } else if (response?.status === "not_found") {
-                    const error = new Error(
-                        "Nie znaleziono żądania w rejestrze."
-                    );
-                    error.code = "ORDER_NOT_FOUND";
-                    reject(error);
+                    // The POST is still running and may not have written its first
+                    // register row yet. Keep checking briefly before offering retry.
+                    if (Date.now() - startedAt < 20000) {
+                        setTimeout(poll, pollDelay);
+                        pollDelay = Math.min(Math.round(pollDelay * 1.5), 2200);
+                    } else {
+                        const error = new Error(
+                            "Nie znaleziono żądania w rejestrze."
+                        );
+                        error.code = "ORDER_NOT_FOUND";
+                        reject(error);
+                    }
                 } else {
                     reject(new Error("Nieoczekiwana odpowiedź backendu."));
                 }
@@ -1136,7 +1231,8 @@ function waitForOrderResult(requestId, timeoutMs) {
 
                 settled = true;
                 cleanup();
-                setTimeout(poll, 2000);
+                setTimeout(poll, pollDelay);
+                pollDelay = Math.min(Math.round(pollDelay * 1.5), 2200);
             };
 
             script.src =
@@ -1204,26 +1300,43 @@ if (form) {
 // =========================
 
 updateShippingFields();
-updateSummary();
-
-if (addZineButton) {
-    addZineButton.disabled = true;
-    addZineButton.textContent = "Ładowanie produktów…";
+const hasCachedCatalog = Boolean(readCachedProductCatalog());
+if (hasCachedCatalog) {
+    productCatalogLoaded = true;
+    productCatalogError = null;
+    if (addZineButton) addZineButton.textContent = "DODAJ BREADCRUMBS";
+    addZine();
+    updateAddButton();
+    updateSummary();
+} else {
+    updateSummary();
+    if (addZineButton) {
+        addZineButton.disabled = true;
+        addZineButton.textContent = "Ładowanie breadcrumbs…";
+    }
 }
 
+// Refresh in the background. A fresh homepage catalog makes the form usable
+// immediately; live backend validation remains authoritative at checkout.
 loadProductCatalog()
     .then(() => {
         productCatalogLoaded = true;
         productCatalogError = null;
-        if (addZineButton) addZineButton.textContent = "+ DODAJ ZINA";
-        addZine();
+        if (addZineButton) addZineButton.textContent = "DODAJ BREADCRUMBS";
+        if (!hasCachedCatalog) {
+            addZine();
+        } else {
+            zinesList?.querySelectorAll(".zine-form-item").forEach((item, index) => {
+                syncZineProduct(item, index + 1);
+            });
+        }
         updateAddButton();
         updateSummary();
     })
     .catch(error => {
-        productCatalogError = error.message || "Nie udało się pobrać produktów.";
-        const summaryMessage = document.querySelector("#summary-message");
-        if (summaryMessage) summaryMessage.textContent = `${productCatalogError} Odśwież stronę i spróbuj ponownie.`;
-        if (addZineButton) addZineButton.textContent = "Produkty niedostępne";
+        productCatalogError = error.message || "Nie udało się pobrać konfiguracji breadcrumbs.";
+        if (!hasCachedCatalog && addZineButton) {
+            addZineButton.textContent = "Breadcrumbs niedostępne";
+        }
         console.error("Product catalog error:", error);
     });

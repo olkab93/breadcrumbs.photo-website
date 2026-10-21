@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>zamów zina — breadcrumbs.photo</title>
+    <title>zamów swój breadcrumbs — breadcrumbs.photo</title>
 
-    <meta name="description" content="Zamów własny zine ze swoich zdjęć. breadcrumbs.photo — Small things, printed.">
+    <meta name="description" content="Zamów swój breadcrumbs ze zdjęć. Wybierz ZINE, ZINE mini lub album.">
 
     <link rel="icon" type="image/png" href="favicon.PNG?v=3">
     <link rel="stylesheet" href="styles.css">
@@ -46,7 +46,7 @@
                 </div>
 
                 <h1>
-                    Zamów <br>zina.
+                    Zamów swój <br>breadcrumbs.
                 </h1>
             </div>
 
@@ -54,13 +54,13 @@
             <div class="hero-bottom">
                 <div class="hero-description">
 
-                    Wybierz formaty swoich zinów, podaj dane do wysyłki
+                    Wybierz breadcrumbs, podaj dane do wysyłki
                     i gotowe. Po złożeniu zamówienia dostaniesz od nas
                     wiadomość z informacją, gdzie przesłać zdjęcia.
                 </div>
 
                 <a href="#ziny" class="scroll-note">
-                    wybierz swoje ziny <span aria-hidden="true">↓</span>
+                    wybierz breadcrumbs <span aria-hidden="true">↓</span>
                 </a>
 
             </div>
@@ -70,13 +70,13 @@
         <section id="ziny">
 
             <div class="section-header">
-                <div class="section-title">01 | Ziny</div>
+                <div class="section-title">01 | Breadcrumbs</div>
             </div>
 
             <div style="max-width: 540px; margin-bottom: 50px;">
                 <p>
-                    Każdy zin przygotowujemy indywidualnie na podstawie przesłanych przez Ciebie zdjęć<br><br>
-                    W ramach jednego zamówienia możesz wybrać do 5 zinów.
+                    Każdy breadcrumbs przygotowujemy indywidualnie na podstawie przesłanych przez Ciebie zdjęć.<br><br>
+                    W ramach jednego zamówienia możesz wybrać maksymalnie 5 produktów.
                 </p>
             </div>
 
@@ -85,7 +85,7 @@
             </div>
 
             <button type="button" class="add-zine-button" id="add-zine">
-                + DODAJ ZINA
+                DODAJ BREADCRUMBS
             </button>
         </section>
 
@@ -94,8 +94,9 @@
             <div class="zine-form-item">
 
                 <div class="zine-form-header">
-                    <span class="zine-number">ZINE <span class="zine-index">1</span></span>
-                    <button type="button" class="remove-zine" aria-label="Usuń ten zine">Usuń</button>
+                    <span class="zine-number"><span class="product-type-label">ZINE</span> <span
+                            class="zine-index">1</span></span>
+                    <button type="button" class="remove-zine" aria-label="Usuń breadcrumbs">Usuń</button>
                 </div>
 
                 <div class="zine-fields">
@@ -104,8 +105,8 @@
                     <fieldset class="form-field" style="grid-column: 1 / -1;">
                         <legend
                             style="font-family: inherit; font-size: 12px; text-transform: uppercase; margin-bottom: 12px; display: block;">
-                            Produkt</legend>
-                        <div style="display: flex; gap: 15px;">
+                            Rodzaj breadcrumbs</legend>
+                        <div class="product-choice-options" style="display: flex; gap: 15px;">
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                 <input type="radio" name="zine-product-kind" value="zine" required>
                                 <span>ZINE</span>
@@ -113,6 +114,10 @@
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                 <input type="radio" name="zine-product-kind" value="zine_mini">
                                 <span>ZINE mini</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="zine-product-kind" value="album">
+                                <span>ALBUM</span>
                             </label>
                         </div>
                     </fieldset>
@@ -122,6 +127,10 @@
                             style="font-family: inherit; font-size: 12px; text-transform: uppercase; margin-bottom: 12px; display: block;">
                             Liczba stron</legend>
                         <div style="display: flex; gap: 15px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="radio" name="zine-pages" value="8" required>
+                                <span>8</span>
+                            </label>
                             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
                                 <input type="radio" name="zine-pages" value="16" required>
                                 <span>16</span>
@@ -135,9 +144,8 @@
 
                     <!-- TITLE -->
                     <label class="form-field" style="grid-column: 1 / -1;">
-                        <span>Tytuł zina</span>
-                        <input type="text" name="zine-title"
-                            placeholder="Jeśli zostawisz puste, zine nie będzie miał tekstu na okładce">
+                        <span>Tytuł</span>
+                        <input type="text" name="zine-title" placeholder="Opcjonalny tytuł breadcrumbs">
                     </label>
 
                     <!-- SUBTITLE -->
@@ -147,7 +155,7 @@
                     </label>
 
                     <!-- COVER TYPE -->
-                    <fieldset class="form-field" style="grid-column: 1 / -1;">
+                    <fieldset class="form-field zine-cover-field" style="grid-column: 1 / -1;">
                         <legend
                             style="font-family: inherit; font-size: 12px; text-transform: uppercase; margin-bottom: 12px; display: block;">
                             Typ okładki</legend>
@@ -162,16 +170,17 @@
                                     <span>Transparentna</span>
                                 </label>
                             </div>
-                            <div class="zine-price-line">
-                                <span>Cena</span>
-                                <strong data-zine-price>—</strong>
-                            </div>
                         </div>
                         <small style="display: block; opacity: 0.65; font-size: 12px; line-height: 1.4;">
-                            Na okładce transparentnej będzie widoczne pierwsze zdjęcie z Twojego zina. Zwykła okładka ma
-                            drukowaną grafikę.
+                            Okładka transparentna to dodatek do zwykłej okładki. Coś jak obwolua w ksiąkach, tylko
+                            zszyta z całością na grzbiecie zina.
                         </small>
                     </fieldset>
+
+                    <div class="zine-price-line product-price-line" style="grid-column: 1 / -1;">
+                        <span>Cena</span>
+                        <strong data-zine-price>—</strong>
+                    </div>
 
                 </div>
 
@@ -238,7 +247,7 @@
 
                 <div style="max-width: 540px; margin-bottom: 50px;">
                     <p>
-                        Wybierz sposób, w jaki chcesz otrzymać zina.
+                        Wybierz sposób, w jaki chcesz otrzymać zamówienie.
                     </p>
                 </div>
 
@@ -362,15 +371,10 @@
                 <div class="summary-lines" id="summary-lines"></div>
 
 
-                <div class="summary-message" id="summary-message">
-                    Dodaj zine, aby zobaczyć podsumowanie.
-                </div>
-
                 <div class="promo-code-box">
                     <label for="promo-code">Kod promocyjny</label>
                     <div class="promo-code-controls">
-                        <input id="promo-code" name="promo-code" type="text" autocomplete="off"
-                            placeholder="Wpisz kod">
+                        <input id="promo-code" name="promo-code" type="text" autocomplete="off" placeholder="Wpisz kod">
                         <button type="button" class="promo-apply-button" id="apply-promo-code">
                             Zastosuj kod
                         </button>
@@ -394,15 +398,20 @@
                         <input type="checkbox" id="terms-accepted" name="terms-accepted" required
                             aria-describedby="terms-consent-text">
                         <span id="terms-consent-text">
-                            Akceptuję <a href="#" data-link-placeholder>Regulamin sklepu</a> i zobowiązuję się do zapłaty za zamówienie.
+                            Akceptuję <a
+                                href="https://drive.google.com/file/d/1YjQy82Yg8TfdZ5yMqdSFH040Jv-bM_w1/view?usp=drive_link"
+                                target="_blank">Regulamin sklepu</a> i zobowiązuję się do
+                            zapłaty za zamówienie.
                             <span class="required-label">zgoda wymagana</span>
                         </span>
                     </label>
 
                     <p class="privacy-information">
-                        Administratorem Twoich danych osobowych jest sprzedawca breadcrumbs.photo.
-                        Twoje dane wykorzystujemy do obsługi zamówienia i realizacji umowy.
-                        Szczegóły znajdziesz w <a href="#" data-link-placeholder>Polityce prywatności</a>.
+                        Administratorem Twoich danych osobowych jest Aleksandra Bocheńska, prowadząca breadcrumbs.photo.
+                        Dane przetwarzamy, aby obsłużyć i zrealizować zamówienie. Więcej informacji o przetwarzaniu
+                        danych i Twoich prawach znajdziesz w <a
+                            href="https://drive.google.com/file/d/1jJ2AYsVnyQ31KaWi_Utqajehu2xo02Cd/view?usp=drive_link"
+                            target="_blank">Polityce prywatności</a>.
                     </p>
                 </div>
 
@@ -451,27 +460,29 @@
 
 
 
-    <footer>
-
-        <div>
-            © <span id="current-year">2026</span> breadcrumbs.photo
+    <footer class="site-footer">
+        <div class="footer-cookie">
+            <button class="cookie-preferences-link" type="button"
+                onclick="window.breadcrumbsCookieConsent?.show()">ustawienia cookies</button>
         </div>
 
-        <div>
-            <a href="index.html">
+        <div class="footer-center">
+            <a class="footer-logo" href="index.html">
                 <img class="logo-mark" src="header-logo.png" alt="breadcrumbs.photo logo">
             </a>
+            <div class="footer-copyright">© <span id="current-year">2026</span> breadcrumbs.photo</div>
         </div>
 
-        <div>
+        <div class="footer-instagram">
             <a href="https://instagram.com/breadcrumbs.photo" target="_blank" rel="noopener noreferrer">
                 @breadcrumbs.photo
             </a>
         </div>
-
     </footer>
 
 
+    <script src="cookie-consent.js"></script>
+    <script src="recaptcha.js"></script>
     <script src="order.js"></script>
 
 </body>
