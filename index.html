@@ -86,10 +86,70 @@
                 </div>
 
 
+                <a href="#galeria" class="scroll-note">
+                    breadcrumbsy <span aria-hidden="true">↓</span>
+                </a>
+
+            </div>
+
+        </section>
+
+        <!-- ==========================
+     GALERIA / PLACEHOLDERY
+========================== -->
+
+        <section>
+            <div class="section-header" id="galeria">
+
+                <div class="section-title">
+                    Tak może wyglądać Twój breadcrumbs
+                </div>
+
+            </div>
+
+
+            <div class="gallery">
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zines.jpg" alt="ZINE mini w formacie A6 i ZINE w formacie A5">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine_mini/zine_mini_1.jpg" alt="ZINE mini w formacie A6">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine/zine_2.jpg" alt="ZINE w formacie A5">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine_mini/zine_mini_cover.jpg" alt="ZINE mini w formacie A6">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/album/album_cover_2.jpeg" alt="ALBUM w formacie 10x7,5">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/album/album_2.jpeg" alt="ALBUM w formacie 10x7,5">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine_mini/zine_mini_transparent.jpeg"
+                        alt="ZINE mini w formacie A6 z okładką transparentną">
+                </div>
+
+                <div class="image-placeholder gallery-image">
+                    <img src="/products/zine_mini/zine_mini_transparent_2.jpeg"
+                        alt="ZINE mini w formacie A6 z okładką transparentną">
+                </div>
+
+            </div>
+
+            <div class="scroll-note-container">
                 <a href="#produkty" class="scroll-note">
                     zobacz produkty <span aria-hidden="true">↓</span>
                 </a>
-
             </div>
 
         </section>
@@ -236,7 +296,7 @@
                 <article class="product-panel" id="album">
                     <div class="products">
                         <div class="product-image">
-                            <img src="/products/album_wip.jpg" alt="ALBUM w formacie 10x7,5">
+                            <img src="/products/album/album_kitku.jpeg" alt="ALBUM w formacie 10x7,5">
                         </div>
                         <div class="product-stack">
                             <div class="product">
@@ -455,46 +515,6 @@
 
         </section>
 
-
-
-        <!-- ==========================
-     GALERIA / PLACEHOLDERY
-========================== -->
-
-        <section>
-
-            <div class="section-header">
-
-                <div class="section-title">
-                    Tak może wyglądać Twój breadcrumbs
-                </div>
-
-            </div>
-
-
-            <div class="gallery">
-
-                <div class="image-placeholder gallery-image">
-                    <img src="/products/zines.jpg" alt="ZINE w formacie A6 i A5">
-                </div>
-
-                <div class="image-placeholder gallery-image">
-                    <img src="/products/zine_mini/zine_mini_1.jpg" alt="ZINE mini w formacie A6">
-                </div>
-
-                <div class="image-placeholder gallery-image">
-                    <img src="/products/zine/zine_2.jpg" alt="ZINE w formacie A5">
-                </div>
-
-                <div class="image-placeholder gallery-image">
-                    <img src="/products/zine_mini/zine_mini_cover.jpg" alt="ZINE mini w formacie A6">
-                </div>
-            </div>
-
-        </section>
-
-
-
         <!-- ==========================
      CTA
 ========================== -->
@@ -532,6 +552,17 @@
 
         </section>
 
+        <dialog class="gallery-lightbox" aria-label="Podgląd zdjęć z galerii">
+            <button class="gallery-lightbox-close" type="button" aria-label="Zamknij podgląd">×</button>
+            <button class="gallery-lightbox-nav gallery-lightbox-prev" type="button"
+                aria-label="Poprzednie zdjęcie">‹</button>
+            <figure class="gallery-lightbox-figure">
+                <img class="gallery-lightbox-image" alt="">
+                <figcaption class="gallery-lightbox-caption"></figcaption>
+            </figure>
+            <button class="gallery-lightbox-nav gallery-lightbox-next" type="button"
+                aria-label="Następne zdjęcie">›</button>
+        </dialog>
 
     </main>
 
@@ -565,6 +596,56 @@
     <script src="cookie-consent.js"></script>
     <script src="recaptcha.js"></script>
     <script src="script.js"></script>
+    <script>
+        (() => {
+            const dialog = document.querySelector(".gallery-lightbox");
+            const preview = dialog?.querySelector(".gallery-lightbox-image");
+            const caption = dialog?.querySelector(".gallery-lightbox-caption");
+            const images = [...document.querySelectorAll(".gallery .gallery-image img")];
+            if (!dialog || !preview || !caption || images.length === 0) return;
+
+            let currentIndex = 0;
+            let opener = null;
+            const showImage = (index) => {
+                currentIndex = (index + images.length) % images.length;
+                const image = images[currentIndex];
+                preview.src = image.currentSrc || image.src;
+                preview.alt = image.alt;
+                caption.textContent = image.alt;
+            };
+
+            images.forEach((image, index) => {
+                image.tabIndex = 0;
+                image.setAttribute("role", "button");
+                image.setAttribute("aria-label", `Powiększ zdjęcie: ${image.alt}`);
+                image.addEventListener("click", () => {
+                    opener = image;
+                    showImage(index);
+                    dialog.showModal();
+                });
+                image.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        opener = image;
+                        showImage(index);
+                        dialog.showModal();
+                    }
+                });
+            });
+
+            dialog.querySelector(".gallery-lightbox-close").addEventListener("click", () => dialog.close());
+            dialog.querySelector(".gallery-lightbox-prev").addEventListener("click", () => showImage(currentIndex - 1));
+            dialog.querySelector(".gallery-lightbox-next").addEventListener("click", () => showImage(currentIndex + 1));
+            dialog.addEventListener("click", (event) => {
+                if (event.target === dialog) dialog.close();
+            });
+            dialog.addEventListener("close", () => opener?.focus());
+            dialog.addEventListener("keydown", (event) => {
+                if (event.key === "ArrowLeft") showImage(currentIndex - 1);
+                if (event.key === "ArrowRight") showImage(currentIndex + 1);
+            });
+        })();
+    </script>
 </body>
 
 </html>

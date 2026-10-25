@@ -187,6 +187,11 @@ h1 {
     max-width: 1100px;
 }
 
+.scroll-note-container {
+    display: flex;
+    justify-content: flex-end;
+}
+
 .hero-bottom {
     display: flex;
     justify-content: space-between;
@@ -437,6 +442,118 @@ section {
 
 .gallery-image {
     aspect-ratio: 1;
+}
+
+.gallery-image img {
+    cursor: zoom-in;
+}
+
+.gallery-lightbox {
+    position: fixed;
+    inset: 0;
+    width: min(94vw, 1200px);
+    max-width: none;
+    height: min(92vh, 900px);
+    max-height: none;
+    padding: 56px 72px 28px;
+    border: 0;
+    background: #171715;
+    color: #fff;
+    overflow: visible;
+}
+
+.gallery-lightbox::backdrop {
+    background: rgb(0 0 0 / 88%);
+}
+
+.gallery-lightbox-figure {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 0;
+}
+
+.gallery-lightbox-image {
+    display: block;
+    max-width: 100%;
+    max-height: calc(100% - 42px);
+    object-fit: contain;
+}
+
+.gallery-lightbox-caption {
+    min-height: 18px;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.gallery-lightbox-close,
+.gallery-lightbox-nav {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    border: 0;
+    color: #fff;
+    background: rgb(255 255 255 / 14%);
+    cursor: pointer;
+}
+
+.gallery-lightbox-close {
+    top: 12px;
+    right: 12px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    font-size: 30px;
+    line-height: 1;
+}
+
+.gallery-lightbox-nav {
+    top: 50%;
+    width: 44px;
+    height: 56px;
+    border-radius: 4px;
+    transform: translateY(-50%);
+    font-size: 36px;
+    line-height: 1;
+}
+
+.gallery-lightbox-prev {
+    left: 12px;
+}
+
+.gallery-lightbox-next {
+    right: 12px;
+}
+
+.gallery-lightbox-close:hover,
+.gallery-lightbox-nav:hover {
+    background: rgb(255 255 255 / 28%);
+}
+
+@media (max-width: 600px) {
+    .gallery-lightbox {
+        width: 100vw;
+        height: 100vh;
+        padding: 52px 44px 24px;
+    }
+
+    .gallery-lightbox-nav {
+        width: 36px;
+    }
+
+    .gallery-lightbox-prev {
+        left: 4px;
+    }
+
+    .gallery-lightbox-next {
+        right: 4px;
+    }
 }
 
 .cta {
