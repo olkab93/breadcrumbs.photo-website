@@ -111,36 +111,36 @@
             <div class="gallery">
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/zines.jpg" alt="ZINE mini w formacie A6 i ZINE w formacie A5">
+                    <img src="/products/gallery-thumbs/zines.webp" data-fullsrc="/products/zines.jpg" loading="lazy" decoding="async" alt="ZINE mini w formacie A6 i ZINE w formacie A5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/zine_mini/zine_mini_1.jpg" alt="ZINE mini w formacie A6">
+                    <img src="/products/gallery-thumbs/zine-mini-1.webp" data-fullsrc="/products/zine_mini/zine_mini_1.jpg" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/zine/zine_2.jpg" alt="ZINE w formacie A5">
+                    <img src="/products/gallery-thumbs/zine-a5-2.webp" data-fullsrc="/products/zine/zine_2.jpg" loading="lazy" decoding="async" alt="ZINE w formacie A5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/zine_mini/zine_mini_cover.jpg" alt="ZINE mini w formacie A6">
+                    <img src="/products/gallery-thumbs/zine-mini-cover.webp" data-fullsrc="/products/zine_mini/zine_mini_cover.jpg" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/album/album_cover_2.jpeg" alt="ALBUM w formacie 10x7,5">
+                    <img src="/products/gallery-thumbs/album-cover.webp" data-fullsrc="/products/album/album_cover_2.jpeg" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/album/album_2.jpeg" alt="ALBUM w formacie 10x7,5">
+                    <img src="/products/gallery-thumbs/album-inside.webp" data-fullsrc="/products/album/album_2.jpeg" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/zine_mini/zine_mini_transparent.jpeg"
+                    <img src="/products/gallery-thumbs/zine-mini-transparent.webp" data-fullsrc="/products/zine_mini/zine_mini_transparent.jpeg" loading="lazy" decoding="async"
                         alt="ZINE mini w formacie A6 z okładką transparentną">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/zine_mini/zine_mini_transparent_2.jpeg"
+                    <img src="/products/gallery-thumbs/zine-mini-transparent-2.webp" data-fullsrc="/products/zine_mini/zine_mini_transparent_2.jpeg" loading="lazy" decoding="async"
                         alt="ZINE mini w formacie A6 z okładką transparentną">
                 </div>
 
@@ -177,7 +177,7 @@
                     <div class="products">
                         <div class="product-photo">
                             <div class="image-placeholder product-image">
-                                <img src="/products/zine_mini/zine_mini_2.jpg" alt="ZINE mini w formacie A6">
+                                <img src="/products/product-photos/zine-mini.webp" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
 
                             </div>
                         </div>
@@ -237,7 +237,7 @@
                 <article class="product-panel" id="zine-core">
                     <div class="products">
                         <div class="product-image">
-                            <img src="/products/zine/zine_1.jpg" alt="ZINE w formacie A5">
+                            <img src="/products/product-photos/zine-a5.webp" loading="lazy" decoding="async" alt="ZINE w formacie A5">
                         </div>
 
                         <div class="product-stack">
@@ -296,7 +296,7 @@
                 <article class="product-panel" id="album">
                     <div class="products">
                         <div class="product-image">
-                            <img src="/products/album/album_kitku.jpeg" alt="ALBUM w formacie 10x7,5">
+                            <img src="/products/product-photos/album.webp" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
                         </div>
                         <div class="product-stack">
                             <div class="product">
@@ -609,7 +609,7 @@
             const showImage = (index) => {
                 currentIndex = (index + images.length) % images.length;
                 const image = images[currentIndex];
-                preview.src = image.currentSrc || image.src;
+                preview.src = image.dataset.fullsrc || image.currentSrc || image.src;
                 preview.alt = image.alt;
                 caption.textContent = image.alt;
             };
