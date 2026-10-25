@@ -111,36 +111,36 @@
             <div class="gallery">
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/zines.webp" data-fullsrc="/products/zines.jpg" loading="lazy" decoding="async" alt="ZINE mini w formacie A6 i ZINE w formacie A5">
+                    <img src="/products/gallery-thumbs/fast/zines.webp" data-fullsrc="/products/gallery-full/zines.webp" loading="lazy" decoding="async" alt="ZINE mini w formacie A6 i ZINE w formacie A5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/zine-mini-1.webp" data-fullsrc="/products/zine_mini/zine_mini_1.jpg" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
+                    <img src="/products/gallery-thumbs/fast/zine-mini-1.webp" data-fullsrc="/products/gallery-full/zine-mini-1.webp" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/zine-a5-2.webp" data-fullsrc="/products/zine/zine_2.jpg" loading="lazy" decoding="async" alt="ZINE w formacie A5">
+                    <img src="/products/gallery-thumbs/fast/zine-a5-2.webp" data-fullsrc="/products/gallery-full/zine-a5-2.webp" loading="lazy" decoding="async" alt="ZINE w formacie A5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/zine-mini-cover.webp" data-fullsrc="/products/zine_mini/zine_mini_cover.jpg" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
+                    <img src="/products/gallery-thumbs/fast/zine-mini-cover.webp" data-fullsrc="/products/gallery-full/zine-mini-cover.webp" loading="lazy" decoding="async" alt="ZINE mini w formacie A6">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/album-cover.webp" data-fullsrc="/products/album/album_cover_2.jpeg" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
+                    <img src="/products/gallery-thumbs/fast/album-cover.webp" data-fullsrc="/products/gallery-full/album-cover.webp" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/album-inside.webp" data-fullsrc="/products/album/album_2.jpeg" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
+                    <img src="/products/gallery-thumbs/fast/album-inside.webp" data-fullsrc="/products/gallery-full/album-inside.webp" loading="lazy" decoding="async" alt="ALBUM w formacie 10x7,5">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/zine-mini-transparent.webp" data-fullsrc="/products/zine_mini/zine_mini_transparent.jpeg" loading="lazy" decoding="async"
+                    <img src="/products/gallery-thumbs/fast/zine-mini-transparent.webp" data-fullsrc="/products/gallery-full/zine-mini-transparent.webp" loading="lazy" decoding="async"
                         alt="ZINE mini w formacie A6 z okładką transparentną">
                 </div>
 
                 <div class="image-placeholder gallery-image">
-                    <img src="/products/gallery-thumbs/zine-mini-transparent-2.webp" data-fullsrc="/products/zine_mini/zine_mini_transparent_2.jpeg" loading="lazy" decoding="async"
+                    <img src="/products/gallery-thumbs/fast/zine-mini-transparent-2.webp" data-fullsrc="/products/gallery-full/zine-mini-transparent-2.webp" loading="lazy" decoding="async"
                         alt="ZINE mini w formacie A6 z okładką transparentną">
                 </div>
 
@@ -609,9 +609,16 @@
             const showImage = (index) => {
                 currentIndex = (index + images.length) % images.length;
                 const image = images[currentIndex];
-                preview.src = image.dataset.fullsrc || image.currentSrc || image.src;
+                preview.src = image.currentSrc || image.src;
                 preview.alt = image.alt;
                 caption.textContent = image.alt;
+
+                const fullImage = new Image();
+                fullImage.decoding = "async";
+                fullImage.src = image.dataset.fullsrc || image.currentSrc || image.src;
+                fullImage.decode().then(() => {
+                    if (currentIndex === index && dialog.open) preview.src = fullImage.src;
+                }).catch(() => {});
             };
 
             images.forEach((image, index) => {
