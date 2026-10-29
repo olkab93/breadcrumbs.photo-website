@@ -52,6 +52,13 @@ if (productDataElements.length) {
         catalogScript.remove();
     };
 
+    const syncEditionPurchaseWidth = () => {
+        const firstTitleLine = document.querySelector(".edition-copy .edition-title-first-line");
+        const purchaseRow = document.querySelector(".edition-copy .edition-purchase-row");
+        if (!firstTitleLine || !purchaseRow) return;
+        purchaseRow.style.setProperty("--edition-title-line-width", `${firstTitleLine.getBoundingClientRect().width}px`);
+    };
+
     const renderCatalogResponse = (response, saveToCache = false) => {
         if (!response?.success) return;
 
@@ -73,6 +80,34 @@ if (productDataElements.length) {
                     element.textContent = response.settings[key];
                 }
             });
+        }
+        if (Array.isArray(response.editions)) {
+            const editionsById = new Map(response.editions.map(edition => [String(edition.edition_id), edition]));
+            document.querySelectorAll("[data-edition-id]").forEach(section => {
+                const edition = editionsById.get(section.dataset.editionId);
+                if (!edition) return;
+                section.querySelectorAll("[data-edition-field]").forEach(element => {
+                    const field = element.dataset.editionField;
+                    if (field === "price_pln" && Number.isFinite(Number(edition.price_pln))) {
+                        element.textContent = `${new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 2 }).format(Number(edition.price_pln))} zł`;
+                    } else if (field === "title") {
+                        const titleWords = String(edition.title || "").trim().split(/\s+/).filter(Boolean);
+                        const firstLine = document.createElement("span");
+                        firstLine.className = "edition-title-first-line";
+                        firstLine.textContent = titleWords.shift() || "";
+                        element.replaceChildren(firstLine);
+                        if (titleWords.length) {
+                            element.append(document.createElement("br"));
+                            const secondLine = document.createElement("span");
+                            secondLine.textContent = titleWords.join(" ");
+                            element.append(secondLine);
+                        }
+                    } else if (Object.prototype.hasOwnProperty.call(edition, field)) {
+                        element.textContent = edition[field];
+                    }
+                });
+            });
+            requestAnimationFrame(syncEditionPurchaseWidth);
         }
         if (!Array.isArray(response.products)) return;
 
@@ -136,4 +171,7 @@ if (productDataElements.length) {
     catalogScript.onerror = cleanupCatalogRequest;
     catalogScript.src = `${PRODUCT_CATALOG_ENDPOINT}?action=products&callback=${encodeURIComponent(callbackName)}&t=${Date.now()}`;
     document.head.appendChild(catalogScript);
+    requestAnimationFrame(syncEditionPurchaseWidth);
+    document.fonts?.ready.then(syncEditionPurchaseWidth);
+    window.addEventListener("resize", syncEditionPurchaseWidth);
 }

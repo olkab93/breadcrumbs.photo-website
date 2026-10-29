@@ -55,6 +55,13 @@ const zinesList = document.querySelector("#zines-list");
 const zineTemplate = document.querySelector("#zine-template");
 const addZineButton = document.querySelector("#add-zine");
 const successSection = document.querySelector("#order-success");
+const editionCheckbox = document.querySelector("#include-edition");
+const editionQuantityInput = document.querySelector("#edition-quantity");
+const printsCheckbox = document.querySelector("#include-prints");
+const printPackageSelect = document.querySelector("#print-package");
+const printPackageQuantityInput = document.querySelector("#print-package-quantity");
+const printSubtotalElement = document.querySelector("#prints-subtotal");
+const requestedEditionId = new URLSearchParams(window.location.search).get("edition");
 let activeOrderRequestId = sessionStorage.getItem("breadcrumbsActiveOrderRequestId");
 let activeOrderPostSent = sessionStorage.getItem("breadcrumbsActiveOrderPostSent") === "true";
 let orderSubmissionInProgress = false;
@@ -74,12 +81,42 @@ let storeSettings = {
 let productCatalog = [];
 let productCatalogLoaded = false;
 let productCatalogError = null;
+const DEFAULT_EDITION = {
+    edition_id: "breadcrumbs_001",
+    name: "BREADCRUMBS / 001",
+    title: "Concrete Jungle",
+    price_pln: 39,
+    edition_limit: 10,
+    available_quantity: 10,
+    active: true,
+    description: "Pierwszy numer autorskiej serii breadcrumbs. Każda edycja ukazuje się raz na kwartał."
+};
+let editionCatalog = [DEFAULT_EDITION];
+let printPackageCatalog = [
+    { package_id: "prints_10", print_count: 10, name: "Mały zestaw", price_pln: 15 },
+    { package_id: "prints_25", print_count: 25, name: "Na ulubione wspomnienia", price_pln: 32 },
+    { package_id: "prints_50", print_count: 50, name: "Większa kolekcja", price_pln: 55 },
+    { package_id: "prints_100", print_count: 100, name: "Duży zestaw", price_pln: 100 }
+];
 
 const PRODUCT_CATALOG_CACHE_KEY = "breadcrumbsProductCatalogCache";
+
+function renderPrintPackageOptions() {
+    if (!printPackageSelect || !printPackageCatalog.length) return;
+    const previous = printPackageSelect.value;
+    printPackageSelect.replaceChildren(...printPackageCatalog.map(item => {
+        const option = document.createElement("option");
+        option.value = item.package_id;
+        option.textContent = `${item.print_count} odbitek · ${item.name} · ${formatPrice(item.price_pln)}`;
+        return option;
+    }));
+    if (printPackageCatalog.some(item => item.package_id === previous)) printPackageSelect.value = previous;
+}
 // Keep the last known catalog available between visits. The live request below
 // always refreshes it in the background, while the backend remains authoritative
 // when an order is submitted.
 const PRODUCT_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_PRINT_PACKAGE_QUANTITY = 10;
 
 function applyProductCatalogResponse(response) {
     if (!response?.success || !Array.isArray(response.products) || !response.settings) {
@@ -113,6 +150,31 @@ function applyProductCatalogResponse(response) {
 
     if (products.length === 0) throw new Error('Brak aktywnych breadcrumbs.');
     productCatalog = products;
+    if (Array.isArray(response.editions)) {
+        editionCatalog = response.editions.map(edition => ({
+            edition_id: String(edition.edition_id || ""),
+            name: String(edition.name || ""),
+            title: String(edition.title || ""),
+            price_pln: Number(edition.price_pln),
+            edition_limit: Number(edition.edition_limit),
+            available_quantity: Number(edition.available_quantity),
+            active: edition.active !== false,
+            description: String(edition.description || "")
+        })).filter(edition => edition.edition_id && edition.name && edition.title &&
+            Number.isFinite(edition.price_pln) && Number.isFinite(edition.edition_limit) &&
+            Number.isFinite(edition.available_quantity));
+    }
+    if (Array.isArray(response.print_packages)) {
+        printPackageCatalog = response.print_packages.map(item => ({
+            package_id: String(item.package_id || ""),
+            print_count: Number(item.print_count),
+            name: String(item.name || ""),
+            price_pln: Number(item.price_pln),
+            active: item.active !== false
+        })).filter(item => item.package_id && item.name && Number.isInteger(item.print_count) && Number.isFinite(item.price_pln));
+        renderPrintPackageOptions();
+    }
+    updateEditionUI();
     return products;
 }
 
@@ -181,6 +243,12 @@ function productFamilyForId(productId) {
     return "";
 }
 
+function isQuantityDiscountEligibleProduct(product) {
+    return ["zine", "zine_mini", "album"].includes(
+        productFamilyForId(String(product?.product_id || ""))
+    );
+}
+
 const PRODUCT_PAGES_BY_FAMILY = {
     zine: [16, 32],
     zine_mini: [8, 16],
@@ -189,7 +257,7 @@ const PRODUCT_PAGES_BY_FAMILY = {
 
 function getSelectedCatalogProduct(item, number) {
     if (!item) return null;
-    const family = item.querySelector(`input[name="zine-${number}-product-kind"]:checked`)?.value;
+    const family = item.querySelector(`select[name="zine-${number}-product-kind"]`)?.value;
     const pages = Number(item.querySelector(`input[name="zine-${number}-pages"]:checked`)?.value);
     if (!PRODUCT_PAGES_BY_FAMILY[family]?.includes(pages)) return null;
     return productCatalog.find(product =>
@@ -200,24 +268,22 @@ function getSelectedCatalogProduct(item, number) {
 function syncZineProduct(item, number) {
     if (!item) return null;
 
-    const familyInputs = item.querySelectorAll(`input[name="zine-${number}-product-kind"]`);
+    const familySelect = item.querySelector(`select[name="zine-${number}-product-kind"]`);
     const pageInputs = item.querySelectorAll(`input[name="zine-${number}-pages"]`);
-    familyInputs.forEach(input => {
-        const allowedPages = PRODUCT_PAGES_BY_FAMILY[input.value] || [];
-        input.disabled = !productCatalog.some(product =>
-            productFamilyForId(product.product_id) === input.value && allowedPages.includes(product.pages)
+    if (!familySelect || pageInputs.length === 0) return null;
+    Array.from(familySelect.options).forEach(option => {
+        const allowedPages = PRODUCT_PAGES_BY_FAMILY[option.value] || [];
+        option.disabled = !productCatalog.some(product =>
+            productFamilyForId(product.product_id) === option.value && allowedPages.includes(product.pages)
         );
     });
-
-    let selectedFamily = item.querySelector(`input[name="zine-${number}-product-kind"]:checked`);
-    if (!selectedFamily || selectedFamily.disabled) {
-        selectedFamily = Array.from(familyInputs).find(input => !input.disabled);
-        if (selectedFamily) selectedFamily.checked = true;
+    if (!familySelect.value || familySelect.selectedOptions[0]?.disabled) {
+        familySelect.value = Array.from(familySelect.options).find(option => !option.disabled)?.value || "";
     }
 
-    const allowedPages = PRODUCT_PAGES_BY_FAMILY[selectedFamily?.value] || [];
+    const allowedPages = PRODUCT_PAGES_BY_FAMILY[familySelect.value] || [];
     const availablePages = productCatalog
-        .filter(product => productFamilyForId(product.product_id) === selectedFamily?.value)
+        .filter(product => productFamilyForId(product.product_id) === familySelect.value)
         .map(product => product.pages)
         .filter(pages => allowedPages.includes(pages));
     pageInputs.forEach(input => {
@@ -226,15 +292,14 @@ function syncZineProduct(item, number) {
         const optionLabel = input.closest("label");
         if (optionLabel) optionLabel.hidden = !isAvailable;
     });
-
-    let selectedPages = item.querySelector(`input[name="zine-${number}-pages"]:checked`);
-    if (!selectedPages || selectedPages.disabled) {
-        selectedPages = Array.from(pageInputs).find(input => !input.disabled);
-        if (selectedPages) selectedPages.checked = true;
+    const selectedPage = item.querySelector(`input[name="zine-${number}-pages"]:checked`);
+    if (!selectedPage || selectedPage.disabled) {
+        const firstAvailablePage = Array.from(pageInputs).find(input => !input.disabled);
+        if (firstAvailablePage) firstAvailablePage.checked = true;
     }
 
     const product = getSelectedCatalogProduct(item, number);
-    const family = item.querySelector(`input[name="zine-${number}-product-kind"]:checked`)?.value;
+    const family = familySelect.value;
     const coverField = item.querySelector(".zine-cover-field");
     const coverInputs = item.querySelectorAll(`input[name="zine-${number}-cover"]`);
     const needsCoverChoice = family !== "album";
@@ -243,12 +308,6 @@ function syncZineProduct(item, number) {
         input.required = needsCoverChoice;
         if (!needsCoverChoice && input.value === "regular") input.checked = true;
     });
-
-    const typeLabel = item.querySelector(".product-type-label");
-    if (typeLabel) {
-        typeLabel.textContent = family === "album" ? "ALBUM" :
-            family === "zine_mini" ? "ZINE mini" : "ZINE";
-    }
 
     item.dataset.productId = product?.product_id || "";
     const priceElement = item.querySelector("[data-zine-price]");
@@ -287,6 +346,8 @@ function addZine() {
             input.name = `zine-${zineCount}-title`;
         } else if (input.name === "zine-subtitle") {
             input.name = `zine-${zineCount}-subtitle`;
+        } else if (input.name === "zine-notes") {
+            input.name = `zine-${zineCount}-notes`;
         } else if (input.name === "zine-cover") {
             input.name = `zine-${zineCount}-cover`;
         }
@@ -300,33 +361,27 @@ function addZine() {
     const newZineFormItem = zineItem.querySelector(".zine-form-item");
 
     // Query for inputs in this specific zine
-    const productKindName = `zine-${zineCount}-product-kind`;
-    const pagesName = `zine-${zineCount}-pages`;
-    const productKindInputs = zineItem.querySelectorAll(`input[name="${productKindName}"]`);
-    const pagesInputs = zineItem.querySelectorAll(`input[name="${pagesName}"]`);
+    const productKindSelect = zineItem.querySelector(`select[name="zine-${zineCount}-product-kind"]`);
+    const pagesInputs = zineItem.querySelectorAll(`input[name="zine-${zineCount}-pages"]`);
     const coverInputs = zineItem.querySelectorAll(`input[name="zine-${zineCount}-cover"]`);
     const defaultProduct = productCatalog.find(product => product.product_id === "zine_16") || productCatalog[0];
 
     if (defaultProduct) {
         const defaultFamily = productFamilyForId(defaultProduct.product_id);
-        const familyInput = Array.from(productKindInputs).find(input => input.value === defaultFamily);
-        const pageInput = Array.from(pagesInputs).find(input => Number(input.value) === defaultProduct.pages);
-        if (familyInput) familyInput.checked = true;
-        if (pageInput) pageInput.checked = true;
+        if (productKindSelect) productKindSelect.value = defaultFamily;
+        const defaultPage = Array.from(pagesInputs).find(input => Number(input.value) === defaultProduct.pages);
+        if (defaultPage) defaultPage.checked = true;
     }
 
-    [...productKindInputs, ...pagesInputs].forEach(input => {
-        input.addEventListener("change", () => {
-            const currentNumber = Array.from(zinesList.querySelectorAll(".zine-form-item"))
-                .indexOf(newZineFormItem) + 1;
+    [productKindSelect, ...pagesInputs].filter(Boolean).forEach(control => {
+        control.addEventListener("change", () => {
+            const currentNumber = Array.from(zinesList.querySelectorAll(".zine-form-item")).indexOf(newZineFormItem) + 1;
             syncZineProduct(newZineFormItem, currentNumber);
             updateSummary();
         });
     });
 
-    if (zineCount === 1 && coverInputs.length > 0) {
-        coverInputs[0].checked = true;
-    }
+    if (coverInputs[0]) coverInputs[0].checked = true;
 
     syncZineProduct(newZineFormItem, zineCount);
 
@@ -386,6 +441,8 @@ function renumberZines() {
                 input.name = `zine-${newNumber}-title`;
             } else if (input.name.includes("subtitle")) {
                 input.name = `zine-${newNumber}-subtitle`;
+            } else if (input.name.includes("notes")) {
+                input.name = `zine-${newNumber}-notes`;
             } else if (input.name.includes("cover")) {
                 input.name = `zine-${newNumber}-cover`;
             }
@@ -479,18 +536,46 @@ shippingRadios.forEach((radio) => {
 
 function calculateOrder() {
     const zineItems = zinesList.querySelectorAll(".zine-form-item");
+    const selectedEdition = editionCheckbox?.checked
+        ? editionCatalog.find(edition => edition.edition_id === editionCheckbox.value && edition.active)
+        : null;
+    const enteredEditionQuantity = Number(editionQuantityInput?.value);
+    const editionMaxQuantity = selectedEdition
+        ? Math.max(0, Math.floor(Math.min(selectedEdition.available_quantity, selectedEdition.edition_limit)))
+        : 0;
+    const editionQuantity = selectedEdition && Number.isInteger(enteredEditionQuantity) &&
+        enteredEditionQuantity >= 1 && enteredEditionQuantity <= editionMaxQuantity
+        ? enteredEditionQuantity
+        : 0;
+    const editionSubtotal = selectedEdition ? selectedEdition.price_pln * editionQuantity : 0;
+    const selectedPrintPackage = printsCheckbox?.checked
+        ? printPackageCatalog.find(item => item.package_id === printPackageSelect?.value)
+        : null;
+    const enteredPrintQuantity = Number(printPackageQuantityInput?.value);
+    const printQuantity = selectedPrintPackage && Number.isInteger(enteredPrintQuantity) &&
+        enteredPrintQuantity > 0 && enteredPrintQuantity <= MAX_PRINT_PACKAGE_QUANTITY
+        ? enteredPrintQuantity
+        : 0;
+    const printsSubtotal = selectedPrintPackage ? selectedPrintPackage.price_pln * printQuantity : 0;
     let subtotal = 0;
+    let discountEligibleCount = 0;
+    let discountEligibleSubtotal = 0;
 
     zineItems.forEach((item, index) => {
         const zineNum = index + 1;
         const product = getSelectedCatalogProduct(item, zineNum);
-        if (product) subtotal += product.price_pln;
+        if (!product) return;
+        subtotal += product.price_pln;
+        if (isQuantityDiscountEligibleProduct(product)) {
+            discountEligibleCount += 1;
+            discountEligibleSubtotal += product.price_pln;
+        }
     });
 
     const count = zineItems.length;
     const discountRate = appliedPromo
         ? appliedPromo.discount_percent / 100
-        : count >= storeSettings.discount_from_count
+        : discountEligibleCount >= storeSettings.discount_from_count
             ? storeSettings.discount_percent / 100
             : 0;
     const selectedShipping = form?.querySelector('input[name="shipping"]:checked')?.value;
@@ -499,10 +584,12 @@ function calculateOrder() {
         : count >= storeSettings.free_shipping_from
             ? 0
             : storeSettings.shipping_standard;
-    const discount = Math.round((subtotal * discountRate + Number.EPSILON) * 100) / 100;
-    const total = Math.round((subtotal - discount + shipping + Number.EPSILON) * 100) / 100;
+    const promoDiscountSubtotal = subtotal + editionSubtotal + printsSubtotal;
+    const discountBase = appliedPromo ? promoDiscountSubtotal : discountEligibleSubtotal;
+    const discount = Math.round((discountBase * discountRate + Number.EPSILON) * 100) / 100;
+    const total = Math.round((subtotal - discount + editionSubtotal + printsSubtotal + shipping + Number.EPSILON) * 100) / 100;
 
-    return { count, subtotal, discount, shipping, total, discountRate };
+    return { count, discountEligibleCount, subtotal, discount, shipping, total, discountRate, selectedEdition, editionQuantity, editionSubtotal, selectedPrintPackage, printQuantity, printsSubtotal };
 }
 
 // =========================
@@ -513,13 +600,58 @@ function formatPrice(value) {
     return value.toFixed(2).replace(".", ",") + " zł";
 }
 
+function updateEditionUI() {
+    if (!editionCheckbox) return;
+    const edition = editionCatalog.find(item =>
+        item.edition_id === (requestedEditionId || editionCheckbox.value) && item.active
+    ) || editionCatalog.find(item => item.edition_id === DEFAULT_EDITION.edition_id && item.active);
+    if (!edition) {
+        editionCheckbox.disabled = true;
+        editionCheckbox.checked = false;
+        return;
+    }
+
+    editionCheckbox.value = edition.edition_id;
+    editionCheckbox.disabled = false;
+    document.querySelectorAll("[data-edition-field]").forEach(element => {
+        const field = element.dataset.editionField;
+        if (field === "price_pln") element.textContent = formatPrice(edition.price_pln);
+        else if (Object.prototype.hasOwnProperty.call(edition, field)) element.textContent = edition[field];
+    });
+
+    if (editionQuantityInput) {
+        const maxQuantity = Math.max(0, Math.floor(Math.min(edition.available_quantity, edition.edition_limit)));
+        const previousQuantity = Math.max(1, Number(editionQuantityInput.value) || 1);
+        editionQuantityInput.min = "1";
+        editionQuantityInput.max = String(maxQuantity);
+        editionQuantityInput.disabled = maxQuantity === 0;
+        if (maxQuantity > 0) editionQuantityInput.value = String(Math.min(previousQuantity, maxQuantity));
+        if (maxQuantity === 0) {
+            editionCheckbox.checked = false;
+            editionCheckbox.disabled = true;
+        }
+    }
+    if (requestedEditionId === edition.edition_id) editionCheckbox.checked = true;
+}
+
+editionCheckbox?.addEventListener("change", updateSummary);
+editionQuantityInput?.addEventListener("input", updateSummary);
+printsCheckbox?.addEventListener("change", updateSummary);
+printPackageSelect?.addEventListener("change", updateSummary);
+printPackageQuantityInput?.addEventListener("input", () => {
+    if (Number(printPackageQuantityInput.value) > MAX_PRINT_PACKAGE_QUANTITY) {
+        printPackageQuantityInput.value = String(MAX_PRINT_PACKAGE_QUANTITY);
+    }
+    updateSummary();
+});
+
 
 // =========================
 // UPDATE SUMMARY
 // =========================
 
 function updateSummary() {
-    const { count, subtotal, discount, shipping, total, discountRate } = calculateOrder();
+    const { count, subtotal, discount, shipping, total, discountRate, selectedEdition, editionQuantity, editionSubtotal, selectedPrintPackage, printQuantity, printsSubtotal } = calculateOrder();
 
     const summaryLines = document.querySelector("#summary-lines");
     const summaryTotal = document.querySelector("#summary-total");
@@ -527,8 +659,9 @@ function updateSummary() {
     // Clear summary lines
     if (summaryLines) {
         summaryLines.innerHTML = "";
+        if (printSubtotalElement) printSubtotalElement.textContent = formatPrice(selectedPrintPackage ? printsSubtotal : 0);
 
-        if (count > 0) {
+        if (count > 0 || selectedEdition || selectedPrintPackage) {
             // Group matching products by their exact catalog name from Sheets.
             const selectedProducts = new Map();
             zinesList.querySelectorAll(".zine-form-item").forEach((item, index) => {
@@ -563,6 +696,30 @@ function updateSummary() {
                 productLine.append(productName, productPrice);
                 summaryLines.appendChild(productLine);
             });
+
+            if (selectedEdition) {
+                const editionLine = document.createElement("div");
+                editionLine.className = "summary-line";
+                const editionName = document.createElement("span");
+                editionName.textContent = editionQuantity > 1
+                    ? `${selectedEdition.name} × ${editionQuantity}`
+                    : selectedEdition.name;
+                const editionPrice = document.createElement("strong");
+                editionPrice.textContent = formatPrice(editionSubtotal);
+                editionLine.append(editionName, editionPrice);
+                summaryLines.appendChild(editionLine);
+            }
+
+            if (selectedPrintPackage) {
+                const printsLine = document.createElement("div");
+                printsLine.className = "summary-line";
+                const printsName = document.createElement("span");
+                printsName.textContent = `ODBITKI · ${selectedPrintPackage.print_count} szt. · ${selectedPrintPackage.name} × ${printQuantity}`;
+                const printsPrice = document.createElement("strong");
+                printsPrice.textContent = formatPrice(printsSubtotal);
+                printsLine.append(printsName, printsPrice);
+                summaryLines.appendChild(printsLine);
+            }
 
             // Add discount if applicable
             if (discount > 0) {
@@ -625,25 +782,49 @@ function validateOrder() {
 
     // Check if at least one product is added
     const zineItems = zinesList.querySelectorAll(".zine-form-item");
-    if (zineItems.length === 0) {
+    const hasSelectedEdition = Boolean(editionCheckbox?.checked);
+    const hasSelectedPrints = Boolean(printsCheckbox?.checked);
+    if (zineItems.length === 0 && !hasSelectedEdition && !hasSelectedPrints) {
         errors.push("Dodaj breadcrumbs, aby kontynuować");
-    } else {
+    }
+    if (zineItems.length > 0) {
         // Check each product and require cover selection only for zines.
         zineItems.forEach((item, index) => {
             const zineNum = index + 1;
             const product = getSelectedCatalogProduct(item, zineNum);
-            const coverChecked = item.querySelector(`input[name="zine-${zineNum}-cover"]:checked`);
-            const family = item.querySelector(`input[name="zine-${zineNum}-product-kind"]:checked`)?.value;
+            const coverSelected = item.querySelector(`input[name="zine-${zineNum}-cover"]:checked`);
+            const family = item.querySelector(`select[name="zine-${zineNum}-product-kind"]`)?.value;
 
             if (!productCatalogLoaded) {
                 errors.push(productCatalogError || "Lista produktów jest jeszcze ładowana.");
             } else if (!product) {
                 errors.push(`Breadcrumbs ${zineNum}: Wybierz wariant i liczbę stron`);
             }
-            if (product && family !== "album" && !coverChecked) {
+            if (product && family !== "album" && !coverSelected) {
                 errors.push(`Breadcrumbs ${zineNum}: Wybierz typ okładki`);
             }
         });
+    }
+    if (hasSelectedEdition && !editionCatalog.some(edition => edition.edition_id === editionCheckbox.value && edition.active)) {
+        errors.push("Ta edycja nie jest obecnie dostępna");
+    }
+    if (hasSelectedEdition) {
+        const selectedEdition = editionCatalog.find(edition => edition.edition_id === editionCheckbox.value && edition.active);
+        const maxQuantity = selectedEdition
+            ? Math.max(0, Math.floor(Math.min(selectedEdition.available_quantity, selectedEdition.edition_limit)))
+            : 0;
+        const quantity = Number(editionQuantityInput?.value);
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > maxQuantity) {
+            errors.push("Podaj prawidłową liczbę dostępnych egzemplarzy edycji autorskiej");
+        }
+    }
+    if (hasSelectedPrints) {
+        const packageExists = printPackageCatalog.some(item => item.package_id === printPackageSelect?.value);
+        const quantity = Number(printPackageQuantityInput?.value);
+        if (!packageExists) errors.push("Wybierz pakiet odbitek");
+        if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_PRINT_PACKAGE_QUANTITY) {
+            errors.push(`Liczba pakietów odbitek może wynosić od 1 do ${MAX_PRINT_PACKAGE_QUANTITY}`);
+        }
     }
 
     // Check contact fields
@@ -961,9 +1142,7 @@ async function submitOrderToBackend() {
 
             const product = getSelectedCatalogProduct(item, number);
 
-            const cover = item.querySelector(
-                `input[name="zine-${number}-cover"]:checked`
-            );
+            const cover = item.querySelector(`input[name="zine-${number}-cover"]:checked`);
 
             return {
                 product_id: product.product_id,
@@ -973,10 +1152,23 @@ async function submitOrderToBackend() {
                 subtitle: item.querySelector(
                     `input[name="zine-${number}-subtitle"]`
                 )?.value.trim() || "",
+                notes: item.querySelector(
+                    `textarea[name="zine-${number}-notes"]`
+                )?.value.trim() || "",
                 cover_type:
                     cover.value === "regular" ? "zwykła" : "transparentna"
             };
         }),
+
+        editions: editionCheckbox?.checked ? [{
+            edition_id: editionCheckbox.value,
+            quantity: Number(editionQuantityInput?.value || 1)
+        }] : [],
+
+        print_packages: printsCheckbox?.checked ? [{
+            package_id: printPackageSelect.value,
+            quantity: Number(printPackageQuantityInput.value)
+        }] : [],
 
         notes: ""
     };
@@ -1300,12 +1492,12 @@ if (form) {
 // =========================
 
 updateShippingFields();
+updateEditionUI();
 const hasCachedCatalog = Boolean(readCachedProductCatalog());
 if (hasCachedCatalog) {
     productCatalogLoaded = true;
     productCatalogError = null;
     if (addZineButton) addZineButton.textContent = "DODAJ BREADCRUMBS";
-    addZine();
     updateAddButton();
     updateSummary();
 } else {
@@ -1323,13 +1515,9 @@ loadProductCatalog()
         productCatalogLoaded = true;
         productCatalogError = null;
         if (addZineButton) addZineButton.textContent = "DODAJ BREADCRUMBS";
-        if (!hasCachedCatalog) {
-            addZine();
-        } else {
-            zinesList?.querySelectorAll(".zine-form-item").forEach((item, index) => {
-                syncZineProduct(item, index + 1);
-            });
-        }
+        zinesList?.querySelectorAll(".zine-form-item").forEach((item, index) => {
+            syncZineProduct(item, index + 1);
+        });
         updateAddButton();
         updateSummary();
     })
