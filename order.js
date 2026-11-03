@@ -573,11 +573,10 @@ function calculateOrder() {
     });
 
     const count = zineItems.length;
-    const discountRate = appliedPromo
-        ? appliedPromo.discount_percent / 100
-        : discountEligibleCount >= storeSettings.discount_from_count
-            ? storeSettings.discount_percent / 100
-            : 0;
+    const volumeDiscountPercent = discountEligibleCount >= storeSettings.discount_from_count
+        ? storeSettings.discount_percent
+        : 0;
+    const promoDiscountPercent = appliedPromo ? appliedPromo.discount_percent : 0;
     const selectedShipping = form?.querySelector('input[name="shipping"]:checked')?.value;
     const shipping = selectedShipping === "pickup"
         ? 0
@@ -585,11 +584,28 @@ function calculateOrder() {
             ? 0
             : storeSettings.shipping_standard;
     const promoDiscountSubtotal = subtotal + editionSubtotal + printsSubtotal;
-    const discountBase = appliedPromo ? promoDiscountSubtotal : discountEligibleSubtotal;
-    const discount = Math.round((discountBase * discountRate + Number.EPSILON) * 100) / 100;
+    let discountVolume = 0;
+    let discountPromo = 0;
+    let discountRate = 0;
+
+    if (appliedPromo && volumeDiscountPercent > promoDiscountPercent) {
+        // Wyższy rabat ilościowy zastępuje kod tylko na kwalifikujących się produktach.
+        discountVolume = Math.round((discountEligibleSubtotal * volumeDiscountPercent / 100 + Number.EPSILON) * 100) / 100;
+        const otherProductsSubtotal = Math.max(0, promoDiscountSubtotal - discountEligibleSubtotal);
+        discountPromo = Math.round((otherProductsSubtotal * promoDiscountPercent / 100 + Number.EPSILON) * 100) / 100;
+        discountRate = promoDiscountPercent / 100;
+    } else if (appliedPromo) {
+        discountPromo = Math.round((promoDiscountSubtotal * promoDiscountPercent / 100 + Number.EPSILON) * 100) / 100;
+        discountRate = promoDiscountPercent / 100;
+    } else if (volumeDiscountPercent > 0) {
+        discountVolume = Math.round((discountEligibleSubtotal * volumeDiscountPercent / 100 + Number.EPSILON) * 100) / 100;
+        discountRate = volumeDiscountPercent / 100;
+    }
+
+    const discount = Math.round((discountVolume + discountPromo + Number.EPSILON) * 100) / 100;
     const total = Math.round((subtotal - discount + editionSubtotal + printsSubtotal + shipping + Number.EPSILON) * 100) / 100;
 
-    return { count, discountEligibleCount, subtotal, discount, shipping, total, discountRate, selectedEdition, editionQuantity, editionSubtotal, selectedPrintPackage, printQuantity, printsSubtotal };
+    return { count, discountEligibleCount, subtotal, discount, discountVolume, discountPromo, shipping, total, discountRate, volumeDiscountPercent, promoDiscountPercent, selectedEdition, editionQuantity, editionSubtotal, selectedPrintPackage, printQuantity, printsSubtotal };
 }
 
 // =========================
@@ -651,7 +667,7 @@ printPackageQuantityInput?.addEventListener("input", () => {
 // =========================
 
 function updateSummary() {
-    const { count, subtotal, discount, shipping, total, discountRate, selectedEdition, editionQuantity, editionSubtotal, selectedPrintPackage, printQuantity, printsSubtotal } = calculateOrder();
+    const { count, subtotal, discount, discountVolume, discountPromo, shipping, total, discountRate, volumeDiscountPercent, promoDiscountPercent, selectedEdition, editionQuantity, editionSubtotal, selectedPrintPackage, printQuantity, printsSubtotal } = calculateOrder();
 
     const summaryLines = document.querySelector("#summary-lines");
     const summaryTotal = document.querySelector("#summary-total");
@@ -721,15 +737,22 @@ function updateSummary() {
                 summaryLines.appendChild(printsLine);
             }
 
-            // Add discount if applicable
-            if (discount > 0) {
+            // Show both applicable rates separately when the quantity discount beats the promo code.
+            const appendDiscountLine = (label, amount) => {
+                if (amount <= 0) return;
                 const discountLine = document.createElement("div");
                 discountLine.className = "summary-line summary-discount";
-                discountLine.innerHTML = `
-                    <span>${appliedPromo ? `Kod ${appliedPromo.code} — rabat ` : "Rabat "}${Math.round(discountRate * 100)}%</span>
-                    <span>−${formatPrice(discount)}</span>
-                `;
+                discountLine.innerHTML = `<span>${label}</span><span>−${formatPrice(amount)}</span>`;
                 summaryLines.appendChild(discountLine);
+            };
+            if (discountVolume > 0 && discountPromo > 0) {
+                appendDiscountLine(`Rabat ilościowy ${volumeDiscountPercent}% — ZINE, ZINE mini i albumy`, discountVolume);
+                appendDiscountLine(`Kod ${appliedPromo.code} — ${promoDiscountPercent}% na pozostałe produkty`, discountPromo);
+            } else if (discount > 0) {
+                const label = discountPromo > 0 && appliedPromo
+                    ? `Kod ${appliedPromo.code} — rabat ${promoDiscountPercent}%`
+                    : `Rabat ilościowy ${volumeDiscountPercent}%`;
+                appendDiscountLine(label, discount);
             }
 
             // Add shipping
